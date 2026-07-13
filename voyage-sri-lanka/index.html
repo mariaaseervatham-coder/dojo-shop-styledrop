@@ -176,6 +176,12 @@
   .apercu-texte p{margin:0 0 4px 0;}
   .theme-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
   .theme-row input[type="text"]{margin:0;}
+  .loc-status{font-size:12px;border-radius:6px;padding:6px 8px;margin-top:6px;line-height:1.4;}
+  .loc-ok{background:#ECFDF5;color:#065F46;border:1px solid #6EE7B7;}
+  .loc-warn{background:var(--noposition-bg,#FEF2F2);color:var(--noposition-ink,#B91C1C);border:1px solid #FCA5A5;}
+  .preview-item{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;}
+  .preview-item input[type="checkbox"]{margin-top:3px;}
+  .preview-item em{color:var(--muted);font-style:italic;}
   .etape{
     background:white;
     border:1px solid var(--border);
@@ -345,6 +351,7 @@
 
     <div class="card">
       <h2>Ajouter un lieu (Insta, Pinterest, Maps...)</h2>
+      <button type="button" class="btn-secondary" id="btn-importer-texte" style="width:100%;margin-bottom:8px;">📋 Importer depuis un texte</button>
       <button type="button" class="btn-secondary" id="btn-seed" style="width:100%;margin-bottom:10px;">📥 Charger l'itinéraire type du voyage de noces</button>
       <form id="form-etape">
         <label>Nom du lieu *</label>
@@ -488,6 +495,7 @@ https://maps.app.goo.gl/..."></textarea>
         <input type="text" id="edit-ville" required autocomplete="off" />
         <div class="suggestions" id="edit-ville-suggestions" style="display:none;"></div>
       </div>
+      <div id="edit-status"></div>
 
       <label>Dates (optionnel)</label>
       <input type="text" id="edit-dates" />
@@ -506,6 +514,20 @@ https://maps.app.goo.gl/..."></textarea>
         <button type="button" class="btn-secondary" id="btn-edition-annuler">Annuler</button>
       </div>
     </form>
+  </div>
+</dialog>
+
+<dialog id="dialog-import-texte">
+  <div class="dialog-body">
+    <h3>Importer depuis un texte</h3>
+    <p style="font-size:12px;color:var(--muted);">Colle un itinéraire (email, notes, texte copié depuis Insta...). Reconnaissance simple par mots-clés — pas une vraie IA — vérifie la pré-liste avant d'ajouter.</p>
+    <textarea id="import-texte-source" style="min-height:110px;" placeholder="Colle ton texte ici..."></textarea>
+    <button type="button" class="btn-secondary" id="btn-analyser-texte" style="width:100%;margin-top:8px;">Analyser</button>
+    <div id="import-preview" style="margin-top:10px;"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button type="button" class="btn-primary" id="btn-import-ajouter" style="margin-top:0;display:none;">Ajouter les lieux cochés</button>
+      <button type="button" class="btn-secondary" id="btn-import-fermer">Fermer</button>
+    </div>
   </div>
 </dialog>
 
@@ -722,8 +744,30 @@ function creerAutocompleteVille(inputEl, boxEl, onCoordsChange){
 
 let coordsSelection = null;
 let editionCoordsOverride = null;
-creerAutocompleteVille(document.getElementById('f-ville'), document.getElementById('f-ville-suggestions'), (c) => coordsSelection = c);
-creerAutocompleteVille(document.getElementById('edit-ville'), document.getElementById('edit-ville-suggestions'), (c) => editionCoordsOverride = c);
+
+// --- Statut en direct : le lieu est-il reconnu ? (visible sur la carte + météo saisonnière) ---
+function statutLocalisationHtml(ville, coordsOverride){
+  if(!ville) return '';
+  const coords = coordsOverride ? [coordsOverride.lat, coordsOverride.lon] : trouverCoords(ville);
+  if(!coords){
+    return `<div class="loc-status loc-warn">⚠️ "${escapeHtml(ville)}" non reconnu — n'apparaîtra pas sur la carte, pas de météo saisonnière disponible. Choisis une suggestion dans la liste pour le localiser.</div>`;
+  }
+  const tag = meteoTagFor(ville);
+  return `<div class="loc-status loc-ok">✅ Reconnu — sera visible sur la carte.${tag ? ` 🌦️ ${escapeHtml(tag)}` : ''}</div>`;
+}
+function wireStatutLocalisation(inputVilleEl, statusEl, getCoordsOverride){
+  const majStatut = () => {
+    statusEl.innerHTML = statutLocalisationHtml(inputVilleEl.value.trim(), getCoordsOverride());
+  };
+  inputVilleEl.addEventListener('input', majStatut);
+  inputVilleEl.addEventListener('blur', majStatut);
+  return majStatut;
+}
+const majStatutAjout = wireStatutLocalisation(document.getElementById('f-ville'), document.getElementById('f-status'), () => coordsSelection);
+const majStatutEdition = wireStatutLocalisation(document.getElementById('edit-ville'), document.getElementById('edit-status'), () => editionCoordsOverride);
+
+creerAutocompleteVille(document.getElementById('f-ville'), document.getElementById('f-ville-suggestions'), (c) => { coordsSelection = c; majStatutAjout(); });
+creerAutocompleteVille(document.getElementById('edit-ville'), document.getElementById('edit-ville-suggestions'), (c) => { editionCoordsOverride = c; majStatutEdition(); });
 
 // --- Aperçu (photo + extrait + lien) via Wikipedia, au nom du lieu saisi ---
 function creerApercu(inputNomEl, apercuEl, liensEl){
@@ -980,7 +1024,6 @@ document.getElementById('form-etape').addEventListener('submit', (ev) => {
   const dates = document.getElementById('f-dates').value.trim();
   const liens = document.getElementById('f-liens').value.split('\n').map(s => s.trim()).filter(Boolean);
   const notes = document.getElementById('f-notes').value.trim();
-  const statusEl = document.getElementById('f-status');
 
   const etape = creerEtape({nom, ville, categorie, dates, liens, notes, coordsOverride: coordsSelection});
   coordsSelection = null;
@@ -988,9 +1031,10 @@ document.getElementById('form-etape').addEventListener('submit', (ev) => {
   logJournal(`Ajout de "${nom}" (${getCategorie(categorie).label}) en brouillon.`);
   save();
 
-  statusEl.textContent = etape.lat != null ? "" : "⚠️ Ville non reconnue — le lieu est ajouté mais n'apparaîtra pas sur la carte. Choisis une suggestion dans la liste pour le localiser.";
   ev.target.reset();
   document.getElementById('f-categorie').value = categorie;
+  document.getElementById('f-apercu').innerHTML = '';
+  majStatutAjout();
   renderAll();
 });
 
@@ -1152,6 +1196,7 @@ function ouvrirEdition(id){
   document.getElementById('edit-dates').value = e.dates || '';
   document.getElementById('edit-liens').value = (e.liens || []).join('\n');
   document.getElementById('edit-notes').value = e.notes || '';
+  majStatutEdition();
   peuplerSelectCategorie();
   document.getElementById('edit-categorie').value = e.categorie;
   document.getElementById('dialog-edition').showModal();
@@ -1314,6 +1359,97 @@ document.getElementById('btn-reordonner').addEventListener('click', () => {
   }
   reordonnerGeographiquement();
   afficherToast("Itinéraire réordonné géographiquement.");
+});
+
+// --- Import depuis un texte collé : reconnaissance par mots-clés (pas une vraie IA), avec pré-liste et dédoublonnage ---
+function parserTexteItineraire(texte){
+  const lignes = texte.split(/\n+/).map(l => l.trim()).filter(Boolean);
+  const motsHebergement = /h[ôo]tel|resort|villa|guesthouse|homestay|h[ée]bergement|auberge/i;
+  const motsResto = /restaurant|d[îi]ner|d[ée]jeuner|caf[ée]|resto/i;
+  const regexDate = /\b\d{1,2}(?:\s?-\s?\d{1,2})?\s?(?:août|aout|septembre|sept)\.?\b/i;
+  const idHebergement = data.categories.find(c => c.id === 'hebergement') ? 'hebergement' : null;
+  const idResto = data.categories.find(c => c.id === 'resto') ? 'resto' : null;
+  const idParDefaut = (data.categories.find(c => c.id === 'activite') || data.categories[0] || {}).id || null;
+
+  const candidats = [];
+  lignes.forEach(ligne => {
+    const nettoyee = ligne.replace(/^[-•*\d.)\s]+/, '').trim();
+    if(nettoyee.length < 3) return;
+    const villeTrouvee = Object.keys(LIEUX_CONNUS).find(k => nettoyee.toLowerCase().includes(k));
+    if(!villeTrouvee) return; // on ignore les lignes où aucun lieu du Sri Lanka n'est reconnu
+    const ville = villeTrouvee.replace(/\b\w/g, c => c.toUpperCase());
+    const dateMatch = nettoyee.match(regexDate);
+    let categorie = idParDefaut;
+    if(idHebergement && motsHebergement.test(nettoyee)) categorie = idHebergement;
+    else if(idResto && motsResto.test(nettoyee)) categorie = idResto;
+    candidats.push({
+      nom: nettoyee.length > 70 ? nettoyee.slice(0, 68) + '…' : nettoyee,
+      ville,
+      dates: dateMatch ? dateMatch[0] : '',
+      categorie,
+    });
+  });
+
+  const vus = new Set();
+  const uniques = candidats.filter(c => {
+    const key = (c.nom + '|' + c.ville).toLowerCase();
+    if(vus.has(key)) return false;
+    vus.add(key);
+    return true;
+  });
+
+  return uniques.map(c => {
+    const dejaPresent = data.etapes.some(e =>
+      e.ville.toLowerCase() === c.ville.toLowerCase() &&
+      (e.nom.toLowerCase().includes(c.nom.toLowerCase().slice(0, 15)) || c.nom.toLowerCase().includes(e.nom.toLowerCase().slice(0, 15)))
+    );
+    return {...c, dejaPresent};
+  });
+}
+
+let previewCourant = [];
+document.getElementById('btn-importer-texte').addEventListener('click', () => {
+  document.getElementById('import-texte-source').value = '';
+  document.getElementById('import-preview').innerHTML = '';
+  document.getElementById('btn-import-ajouter').style.display = 'none';
+  previewCourant = [];
+  document.getElementById('dialog-import-texte').showModal();
+});
+document.getElementById('btn-import-fermer').addEventListener('click', () => document.getElementById('dialog-import-texte').close());
+
+document.getElementById('btn-analyser-texte').addEventListener('click', () => {
+  const texte = document.getElementById('import-texte-source').value;
+  previewCourant = parserTexteItineraire(texte);
+  const el = document.getElementById('import-preview');
+  if(previewCourant.length === 0){
+    el.innerHTML = `<div class="empty">Aucun lieu du Sri Lanka reconnu dans ce texte. Essaie avec des noms de villes explicites (Colombo, Kandy, Ella...).</div>`;
+    document.getElementById('btn-import-ajouter').style.display = 'none';
+    return;
+  }
+  el.innerHTML = `<div class="filters-label">Pré-liste (${previewCourant.length} lieu(x) détecté(s)) — décoche ce que tu ne veux pas ajouter</div>` +
+    previewCourant.map((c, i) => `
+      <label class="preview-item" style="${c.dejaPresent ? 'opacity:0.5;' : ''}">
+        <input type="checkbox" class="preview-check" data-idx="${i}" ${c.dejaPresent ? '' : 'checked'} />
+        <span>
+          <strong>${escapeHtml(c.nom)}</strong><br/>
+          ${escapeHtml(c.ville)}${c.dates ? ' · ' + escapeHtml(c.dates) : ''} · ${escapeHtml(getCategorie(c.categorie).emoji)} ${escapeHtml(getCategorie(c.categorie).label)}
+          ${c.dejaPresent ? '<br/><em>déjà dans ta liste</em>' : ''}
+        </span>
+      </label>`).join('');
+  document.getElementById('btn-import-ajouter').style.display = 'block';
+});
+
+document.getElementById('btn-import-ajouter').addEventListener('click', () => {
+  const coches = Array.from(document.querySelectorAll('.preview-check:checked')).map(cb => previewCourant[parseInt(cb.dataset.idx, 10)]);
+  if(coches.length === 0){ afficherToast('Aucun lieu coché.'); return; }
+  coches.forEach(c => {
+    data.etapes.push(creerEtape({nom: c.nom, ville: c.ville, categorie: c.categorie, dates: c.dates, liens: [], notes: ''}));
+  });
+  logJournal(`Import texte : ${coches.length} lieu(x) ajouté(s).`);
+  save();
+  document.getElementById('dialog-import-texte').close();
+  renderAll();
+  afficherToast(`${coches.length} lieu(x) ajouté(s) à l'itinéraire.`);
 });
 
 document.getElementById('btn-seed').addEventListener('click', async () => {
