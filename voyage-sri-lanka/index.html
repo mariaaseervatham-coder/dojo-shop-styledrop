@@ -182,6 +182,12 @@
   .preview-item{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;}
   .preview-item input[type="checkbox"]{margin-top:3px;}
   .preview-item em{color:var(--muted);font-style:italic;}
+  .apercu-lien-card{display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;text-decoration:none;color:var(--ink);}
+  .apercu-lien-card img{width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;background:white;}
+  .apercu-lien-card.apercu-lien-image img{width:56px;height:56px;}
+  .apercu-lien-card strong{display:block;font-size:12px;}
+  .apercu-lien-extrait{font-size:11px;color:var(--muted);}
+  .etape[data-clickable]{cursor:pointer;}
   .etape{
     background:white;
     border:1px solid var(--border);
@@ -252,10 +258,18 @@
   .map-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:8px;}
   .map-legend span{display:inline-flex;align-items:center;gap:4px;}
   .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
-  #svg-map{width:100%;height:auto;background:#EAF4F0;border-radius:8px;}
+  .map-zoom-wrap{overflow:hidden;border-radius:8px;background:#EAF4F0;touch-action:none;}
+  #svg-map{width:100%;height:auto;display:block;transform-origin:0 0;cursor:grab;}
+  #svg-map.dragging{cursor:grabbing;}
+  .pin-group{cursor:pointer;}
+  .map-zoom-controls{display:flex;gap:6px;margin-top:8px;}
+  .map-zoom-controls button{background:white;border:1px solid var(--border);font-size:12px;padding:5px 10px;}
   .pin-label{font-size:9px;fill:#374151;}
   .pin-icon{font-size:8px;text-anchor:middle;dominant-baseline:central;}
   .zone-label{font-size:9px;fill:#9CA3AF;font-style:italic;}
+  .route-line{stroke:#111827;stroke-width:1.5;stroke-dasharray:4 3;fill:none;}
+  .route-label{font-size:7px;fill:#111827;font-weight:600;}
+  .pin-selected{stroke:#111827;stroke-width:3;}
   .map-legend-row{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:6px;}
   .map-legend-row span{display:inline-flex;align-items:center;gap:4px;}
   .ring{width:10px;height:10px;border-radius:50%;display:inline-block;border:2px solid;background:transparent;}
@@ -384,7 +398,9 @@ https://maps.app.goo.gl/..."></textarea>
 
     <div class="card">
       <h2>Étapes de l'itinéraire</h2>
-      <button type="button" class="btn-secondary" id="btn-reordonner" style="width:100%;margin-bottom:12px;">✨ Générer l'itinéraire (ordre géographique)</button>
+      <button type="button" class="btn-secondary" id="btn-reordonner" style="width:100%;margin-bottom:8px;">✨ Générer l'itinéraire (ordre géographique)</button>
+      <button type="button" class="btn-secondary" id="btn-nettoyer" style="width:100%;margin-bottom:12px;">🧹 Nettoyer &amp; uniformiser les données</button>
+      <div class="empty" style="margin-bottom:12px;">Règles automatiques (titres/liens/notes) — pas une IA connectée à un vrai modèle.</div>
 
       <div class="filters-label">Statut</div>
       <div class="filters" id="filters">
@@ -411,7 +427,22 @@ https://maps.app.goo.gl/..."></textarea>
 
   <div class="map-col">
     <div class="map-card">
-      <svg id="svg-map" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+        <button type="button" class="btn-secondary" id="btn-mode-dessin" style="width:auto;flex:1;">🖊️ Dessiner l'itinéraire sur la carte</button>
+      </div>
+      <div id="dessin-controls" style="display:none;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+        <button type="button" class="btn-primary" id="btn-dessin-valider" style="width:auto;margin-top:0;">✅ Valider ce tracé</button>
+        <button type="button" class="btn-secondary" id="btn-dessin-annuler" style="width:auto;">↺ Recommencer</button>
+        <button type="button" class="btn-secondary" id="btn-dessin-quitter" style="width:auto;">Quitter le mode dessin</button>
+      </div>
+      <div class="map-zoom-wrap" id="map-zoom-wrap">
+        <svg id="svg-map" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="map-zoom-controls">
+        <button type="button" id="btn-zoom-in">➕ Zoom</button>
+        <button type="button" id="btn-zoom-out">➖ Zoom</button>
+        <button type="button" id="btn-zoom-reset">Réinitialiser</button>
+      </div>
       <div class="map-legend-row" id="map-legend-themes"></div>
       <div class="map-legend-row">
         <span><i class="ring" style="border-color:#9CA3AF"></i> Brouillon</span>
@@ -419,7 +450,7 @@ https://maps.app.goo.gl/..."></textarea>
         <span><i class="ring" style="border-color:#16A34A"></i> Validé</span>
         <span style="color:var(--muted)">(bordure = statut)</span>
       </div>
-      <div class="map-caption">Carte schématique (positions approximatives, pas à l'échelle GPS exacte) — couleur = thème, bordure = statut.</div>
+      <div class="map-caption">Carte schématique (positions approximatives, pas à l'échelle GPS exacte) — couleur = thème, bordure = statut. Clique un lieu pour son détail, ou active le mode dessin pour tracer l'itinéraire.</div>
     </div>
   </div>
 </div>
@@ -528,6 +559,17 @@ https://maps.app.goo.gl/..."></textarea>
       <button type="button" class="btn-primary" id="btn-import-ajouter" style="margin-top:0;display:none;">Ajouter les lieux cochés</button>
       <button type="button" class="btn-secondary" id="btn-import-fermer">Fermer</button>
     </div>
+  </div>
+</dialog>
+
+<dialog id="dialog-detail">
+  <div class="dialog-body">
+    <h3 id="detail-titre"></h3>
+    <div id="detail-meta" style="font-size:12px;color:var(--muted);margin-bottom:6px;"></div>
+    <div id="detail-meteo"></div>
+    <div id="detail-notes" style="font-size:13px;margin:10px 0;white-space:pre-wrap;"></div>
+    <div id="detail-liens"></div>
+    <button type="button" class="btn-secondary" id="btn-detail-fermer" style="margin-top:6px;width:100%;">Fermer</button>
   </div>
 </dialog>
 
@@ -829,11 +871,16 @@ const colorFor = statut => ({
 // silhouette approximative de l'île (schématique, pas géographiquement précise)
 const ISLAND_PATH = "M 140 20 C 170 22 195 45 205 80 C 225 130 245 190 250 250 C 253 300 235 340 210 375 C 195 398 170 410 150 405 C 130 398 115 375 108 345 C 95 300 75 260 65 210 C 55 160 60 110 85 65 C 100 38 118 20 140 20 Z";
 
+let posEtapes = {}; // id étape -> {x, y} tel que dessiné sur la carte (coords du viewBox)
+let modeDessin = false;
+let sequenceDessin = [];
+
 function renderMap(){
   const svg = document.getElementById('svg-map');
   const filtreStatut = document.querySelector('#filters button.active').dataset.f;
   const filtreCategorie = document.querySelector('#filters-categorie button.active').dataset.c;
-  let html = `<path d="${ISLAND_PATH}" fill="#D8ECE3" stroke="#B7DCCB" stroke-width="2"/>`;
+  let htmlFond = `<path d="${ISLAND_PATH}" fill="#D8ECE3" stroke="#B7DCCB" stroke-width="2"/>`;
+  let htmlPins = '';
 
   const visibles = data.etapes.filter(e => {
     if(e.lat == null) return false;
@@ -858,16 +905,23 @@ function renderMap(){
     groupes[key].etapes.push(e);
   });
 
+  posEtapes = {};
   const labelPose = new Set();
   Object.values(groupes).forEach(g => {
     const off = indexTheme[g.categorie] || {dx:0, dy:0};
     const gx = g.x + off.dx, gy = g.y + off.dy;
+    g.etapes.forEach(e => posEtapes[e.id] = {x: gx, y: gy});
+
     const statuts = g.etapes.map(e => e.statut);
     const bordure = statuts.every(s => s === statuts[0]) ? colorFor(statuts[0]) : "#111827";
     const style = getCategorie(g.categorie);
     const titre = g.etapes.map(e => `${e.nom} (${getCategorie(e.categorie).label} · ${STATUTS[e.statut].label})`).join(' · ');
-    html += `<circle cx="${gx}" cy="${gy}" r="7" fill="${style.color}" stroke="${bordure}" stroke-width="2.5"><title>${escapeHtml(titre)}</title></circle>`;
-    html += `<text x="${gx}" y="${gy}" class="pin-icon">${style.emoji}</text>`;
+    const ids = g.etapes.map(e => e.id).join(',');
+    const enTrace = modeDessin && g.etapes.some(e => sequenceDessin.includes(e.id));
+    htmlPins += `<g class="pin-group" data-ids="${ids}">
+      <circle cx="${gx}" cy="${gy}" r="7" fill="${style.color}" stroke="${bordure}" stroke-width="2.5" ${enTrace ? 'class="pin-selected"' : ''}><title>${escapeHtml(titre)}</title></circle>
+      <text x="${gx}" y="${gy}" class="pin-icon">${style.emoji}</text>
+    </g>`;
 
     if(!labelPose.has(g.base)){
       labelPose.add(g.base);
@@ -876,14 +930,46 @@ function renderMap(){
       const versLaGauche = g.x > 210;
       const textX = versLaGauche ? g.x - 14 : g.x + 14;
       const anchor = versLaGauche ? 'end' : 'start';
-      html += `<text x="${textX}" y="${g.y + 3}" text-anchor="${anchor}" class="pin-label">${escapeHtml(label)}</text>`;
+      htmlPins += `<text x="${textX}" y="${g.y + 3}" text-anchor="${anchor}" class="pin-label">${escapeHtml(label)}</text>`;
     }
   });
 
-  svg.innerHTML = html;
+  // Tracé du mode dessin : lignes entre les points cliqués, dans l'ordre, avec la durée si connue
+  let htmlTrace = '';
+  if(modeDessin && sequenceDessin.length > 1){
+    for(let i = 0; i < sequenceDessin.length - 1; i++){
+      const a = posEtapes[sequenceDessin[i]];
+      const b = posEtapes[sequenceDessin[i + 1]];
+      if(!a || !b) continue;
+      htmlTrace += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="route-line"/>`;
+      const leg = data.legs[`${sequenceDessin[i]}|${sequenceDessin[i + 1]}`];
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      const labelLeg = leg ? (leg.transport.length > 16 ? leg.transport.slice(0, 15) + '…' : leg.transport) : '+ trajet';
+      htmlTrace += `<text x="${mx}" y="${my}" text-anchor="middle" class="route-label"><title>${escapeHtml(leg ? leg.transport : 'Clique pour définir le trajet')}</title>${escapeHtml(labelLeg)}</text>`;
+    }
+  }
+
+  svg.innerHTML = htmlFond + htmlTrace + htmlPins;
+  svg.querySelectorAll('.pin-group').forEach(g => {
+    g.addEventListener('click', () => onClicPin(g.dataset.ids.split(',')));
+  });
+
   document.getElementById('map-legend-themes').innerHTML = data.categories.map(c =>
     `<span>${escapeHtml(c.emoji)} ${escapeHtml(c.label)}</span>`
   ).join('');
+}
+
+function onClicPin(ids){
+  if(modeDessin){
+    const id = ids[0];
+    if(sequenceDessin.includes(id)) return;
+    const precedent = sequenceDessin[sequenceDessin.length - 1];
+    sequenceDessin.push(id);
+    renderMap();
+    if(precedent) ouvrirLeg(precedent, id);
+  } else {
+    ouvrirDetail(ids[0]);
+  }
 }
 
 function escapeHtml(s){
@@ -1001,6 +1087,56 @@ document.getElementById('btn-ajouter-theme').addEventListener('click', () => {
 });
 peuplerFiltresThemes();
 peuplerSelectCategorie();
+
+// --- Nettoyage & uniformisation des données (règles automatiques, pas une vraie IA) ---
+function nettoyerEtape(e){
+  let modifie = false;
+
+  const villeTrim = e.ville.trim();
+  if(villeTrim !== e.ville){ e.ville = villeTrim; modifie = true; }
+
+  const liensNettoyes = [...new Set((e.liens || []).map(l => l.trim()).filter(Boolean))];
+  if(JSON.stringify(liensNettoyes) !== JSON.stringify(e.liens || [])){ e.liens = liensNettoyes; modifie = true; }
+
+  const notesAvant = (e.notes || '').trim();
+  const nomTrim = e.nom.trim();
+  if(nomTrim.length > 60){
+    const zoneCoupure = nomTrim.slice(0, 60);
+    const dernierEspace = zoneCoupure.lastIndexOf(' ');
+    const limite = dernierEspace > 30 ? dernierEspace : 60;
+    const titreCourt = nomTrim.slice(0, limite).trim();
+    const reste = nomTrim.slice(limite).trim().replace(/^[,;:—-]\s*/, '');
+    if(reste){
+      e.nom = titreCourt;
+      e.notes = reste + (notesAvant ? ' — ' + notesAvant : '');
+      modifie = true;
+    }
+  } else if(nomTrim !== e.nom){
+    e.nom = nomTrim;
+    modifie = true;
+  }
+
+  if((e.notes || '').trim() !== e.notes){ e.notes = (e.notes || '').trim(); modifie = true; }
+
+  return modifie;
+}
+document.getElementById('btn-nettoyer').addEventListener('click', () => {
+  let compte = 0;
+  data.etapes.forEach(e => {
+    if(nettoyerEtape(e)){
+      compte++;
+      e.historique.push({date: new Date().toISOString(), statut: e.statut, note: 'Nettoyage automatique (titre/liens/notes uniformisés).'});
+    }
+  });
+  if(compte === 0){
+    afficherToast('Rien à nettoyer, tes données sont déjà propres.');
+    return;
+  }
+  logJournal(`Nettoyage automatique : ${compte} étape(s) uniformisée(s) (titres, liens, notes).`);
+  save();
+  renderAll();
+  afficherToast(`${compte} étape(s) nettoyée(s) et uniformisée(s).`);
+});
 
 // --- Formulaire d'ajout ---
 function creerEtape({nom, ville, categorie, dates, liens, notes, statut, coordsOverride}){
@@ -1147,7 +1283,7 @@ function wireSwipe(wrap){
     editBg.style.opacity = dx > 10 ? '1' : '0';
     deleteBg.style.opacity = dx < -10 ? '1' : '0';
   };
-  const onUp = () => {
+  const onUp = (ev) => {
     if(!active) return;
     active = false;
     front.style.transition = 'transform 0.18s ease';
@@ -1163,6 +1299,10 @@ function wireSwipe(wrap){
       front.style.transform = 'translateX(0)';
       editBg.style.opacity = '0';
       deleteBg.style.opacity = '0';
+      const cible = ev && ev.target;
+      if(Math.abs(dx) < 8 && (!cible || !cible.closest('select, button, a, input, textarea'))){
+        ouvrirDetail(wrap.dataset.id);
+      }
     }
   };
 
@@ -1176,7 +1316,7 @@ function wireSwipe(wrap){
     front.setPointerCapture(ev.pointerId);
   });
   front.addEventListener('pointermove', (ev) => { if(ev.pointerType !== 'touch') onMove(ev.clientX); });
-  front.addEventListener('pointerup', (ev) => { if(ev.pointerType !== 'touch') onUp(); });
+  front.addEventListener('pointerup', (ev) => { if(ev.pointerType !== 'touch') onUp(ev); });
 }
 
 function supprimerEtape(id){
@@ -1264,6 +1404,67 @@ function afficherHistorique(id){
     e.historique.slice().reverse().map(h => `<li>${new Date(h.date).toLocaleString('fr-FR')} — ${escapeHtml(h.note)}</li>`).join('')
   }</ul>`;
   document.getElementById('dialog-historique').showModal();
+}
+
+// --- Détail d'une étape (clic sur un item de la liste ou un pin de la carte) ---
+function ouvrirDetail(id){
+  const e = data.etapes.find(x => x.id === id);
+  if(!e) return;
+  const cat = getCategorie(e.categorie);
+  document.getElementById('detail-titre').textContent = e.nom;
+  document.getElementById('detail-meta').textContent =
+    `${e.ville} · ${cat.emoji} ${cat.label}${e.dates ? ' · ' + e.dates : ''} · ${STATUTS[e.statut].label}`;
+  const tag = meteoTagFor(e.ville);
+  document.getElementById('detail-meteo').innerHTML = tag ? `<span class="meteo-tag">🌦️ ${escapeHtml(tag)}</span>` : '';
+  document.getElementById('detail-notes').textContent = e.notes || '(pas de notes)';
+  const liensEl = document.getElementById('detail-liens');
+  const liens = e.liens || [];
+  if(liens.length === 0){
+    liensEl.innerHTML = `<div class="empty">Aucun lien enregistré.</div>`;
+  } else {
+    liensEl.innerHTML = liens.map((l, i) => `<div data-idx="${i}"></div>`).join('');
+    liens.forEach((l, i) => chargerApercuLien(l, liensEl.querySelector(`[data-idx="${i}"]`)));
+  }
+  document.getElementById('dialog-detail').showModal();
+}
+document.getElementById('btn-detail-fermer').addEventListener('click', () => document.getElementById('dialog-detail').close());
+
+async function chargerApercuLien(url, containerEl){
+  let domaine;
+  try{ domaine = new URL(url).hostname.replace(/^www\./, ''); }catch(e){ domaine = url; }
+  const favicon = `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(domaine)}`;
+
+  if(/\.(jpe?g|png|gif|webp)(\?|$)/i.test(url)){
+    containerEl.innerHTML = `
+      <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="apercu-lien-card apercu-lien-image">
+        <img src="${escapeHtml(url)}" alt="" />
+        <span><strong>${escapeHtml(domaine)}</strong><span class="apercu-lien-extrait">Image</span></span>
+      </a>`;
+    return;
+  }
+
+  containerEl.innerHTML = `
+    <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="apercu-lien-card">
+      <img src="${favicon}" alt="" />
+      <span><strong>${escapeHtml(domaine)}</strong><span class="apercu-lien-extrait">Ouvrir le lien</span></span>
+    </a>`;
+
+  const wikiMatch = url.match(/wikipedia\.org\/wiki\/([^?#]+)/);
+  if(wikiMatch){
+    try{
+      const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${wikiMatch[1]}`);
+      if(res.ok){
+        const j = await res.json();
+        containerEl.innerHTML = `
+          <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="apercu-lien-card">
+            ${j.thumbnail ? `<img src="${escapeHtml(j.thumbnail.source)}" alt="" />` : `<img src="${favicon}" alt="" />`}
+            <span><strong>${escapeHtml(j.title || domaine)}</strong><span class="apercu-lien-extrait">${escapeHtml((j.extract || '').slice(0, 110))}</span></span>
+          </a>`;
+      }
+    }catch(e){
+      // pas de connexion / page introuvable -> on garde la carte générique déjà affichée
+    }
+  }
 }
 
 // --- Journal global ---
@@ -1542,6 +1743,79 @@ document.getElementById('tab-carte').addEventListener('click', () => {
   document.getElementById('tab-carte').classList.add('active');
   document.getElementById('tab-liste').classList.remove('active');
   renderMap();
+});
+
+// --- Zoom / déplacement sur la carte ---
+let mapZoom = 1, mapPanX = 0, mapPanY = 0;
+function appliquerTransformCarte(){
+  document.getElementById('svg-map').style.transform = `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoom})`;
+}
+document.getElementById('btn-zoom-in').addEventListener('click', () => { mapZoom = Math.min(4, mapZoom * 1.3); appliquerTransformCarte(); });
+document.getElementById('btn-zoom-out').addEventListener('click', () => { mapZoom = Math.max(1, mapZoom / 1.3); appliquerTransformCarte(); });
+document.getElementById('btn-zoom-reset').addEventListener('click', () => { mapZoom = 1; mapPanX = 0; mapPanY = 0; appliquerTransformCarte(); });
+
+const mapWrap = document.getElementById('map-zoom-wrap');
+const mapSvgEl = document.getElementById('svg-map');
+mapWrap.addEventListener('wheel', (ev) => {
+  ev.preventDefault();
+  mapZoom = Math.max(1, Math.min(4, mapZoom * (ev.deltaY < 0 ? 1.12 : 0.9)));
+  appliquerTransformCarte();
+}, {passive: false});
+
+let panActive = false, panStartX = 0, panStartY = 0, panOrigX = 0, panOrigY = 0, panDist = 0;
+mapWrap.addEventListener('pointerdown', (ev) => {
+  if(ev.target.closest('.pin-group')) return; // laisse le clic sur un pin arriver normalement
+  panActive = true; panDist = 0;
+  panStartX = ev.clientX; panStartY = ev.clientY;
+  panOrigX = mapPanX; panOrigY = mapPanY;
+  mapSvgEl.classList.add('dragging');
+  mapWrap.setPointerCapture(ev.pointerId);
+});
+mapWrap.addEventListener('pointermove', (ev) => {
+  if(!panActive) return;
+  const dx = ev.clientX - panStartX, dy = ev.clientY - panStartY;
+  panDist = Math.max(panDist, Math.abs(dx) + Math.abs(dy));
+  mapPanX = panOrigX + dx;
+  mapPanY = panOrigY + dy;
+  appliquerTransformCarte();
+});
+mapWrap.addEventListener('pointerup', () => { panActive = false; mapSvgEl.classList.remove('dragging'); });
+mapWrap.addEventListener('pointerleave', () => { panActive = false; mapSvgEl.classList.remove('dragging'); });
+
+// --- Mode dessin : cliquer les lieux dans l'ordre pour tracer l'itinéraire ---
+document.getElementById('btn-mode-dessin').addEventListener('click', () => {
+  modeDessin = true;
+  sequenceDessin = [];
+  document.getElementById('btn-mode-dessin').style.display = 'none';
+  document.getElementById('dessin-controls').style.display = 'flex';
+  afficherToast('Mode dessin activé — clique tes lieux dans l\'ordre du parcours.');
+  renderMap();
+});
+function quitterModeDessin(){
+  modeDessin = false;
+  sequenceDessin = [];
+  document.getElementById('btn-mode-dessin').style.display = 'block';
+  document.getElementById('dessin-controls').style.display = 'none';
+  renderMap();
+}
+document.getElementById('btn-dessin-quitter').addEventListener('click', quitterModeDessin);
+document.getElementById('btn-dessin-annuler').addEventListener('click', () => {
+  sequenceDessin = [];
+  renderMap();
+});
+document.getElementById('btn-dessin-valider').addEventListener('click', () => {
+  if(sequenceDessin.length < 2){
+    afficherToast('Clique au moins deux lieux pour tracer un trajet.');
+    return;
+  }
+  const idsTraces = new Set(sequenceDessin);
+  const dansLOrdre = sequenceDessin.map(id => data.etapes.find(e => e.id === id)).filter(Boolean);
+  const resteEtapes = data.etapes.filter(e => !idsTraces.has(e.id));
+  data.etapes = [...dansLOrdre, ...resteEtapes];
+  logJournal(`Itinéraire dessiné à la main sur la carte (${dansLOrdre.length} étapes réordonnées).`);
+  save();
+  afficherToast('Tracé appliqué à l\'ordre de l\'itinéraire.');
+  quitterModeDessin();
 });
 
 verifierLienPartage();
