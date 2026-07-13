@@ -115,16 +115,39 @@
   .btn-primary{background:var(--accent);color:white;width:100%;margin-top:12px;}
   .btn-secondary{background:white;border:1px solid var(--border);color:var(--ink);}
   .btn-link{background:none;color:var(--accent);padding:2px 4px;font-size:12px;text-decoration:underline;}
-  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
   .filters button{background:white;border:1px solid var(--border);font-size:12px;padding:5px 10px;}
   .filters button.active{background:var(--ink);color:white;border-color:var(--ink);}
+  .filters-label{font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em;}
+  .etape-swipe{
+    position:relative;
+    overflow:hidden;
+    border-radius:8px;
+    margin-bottom:10px;
+  }
+  .etape-delete-bg{
+    position:absolute;
+    inset:0;
+    background:var(--supprimee);
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    padding-right:18px;
+    font-size:12px;
+    font-weight:600;
+    border-radius:8px;
+  }
   .etape{
     background:white;
     border:1px solid var(--border);
     border-left:4px solid var(--brouillon);
     border-radius:8px;
     padding:10px 12px;
-    margin-bottom:10px;
+    margin-bottom:0;
+    position:relative;
+    touch-action:pan-y;
+    will-change:transform;
   }
   .etape.statut-brouillon{border-left-color:var(--brouillon);}
   .etape.statut-validation{border-left-color:var(--validation);}
@@ -187,7 +210,11 @@
   .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
   #svg-map{width:100%;height:auto;background:#EAF4F0;border-radius:8px;}
   .pin-label{font-size:9px;fill:#374151;}
+  .pin-icon{font-size:8px;text-anchor:middle;dominant-baseline:central;}
   .zone-label{font-size:9px;fill:#9CA3AF;font-style:italic;}
+  .map-legend-row{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:6px;}
+  .map-legend-row span{display:inline-flex;align-items:center;gap:4px;}
+  .ring{width:10px;height:10px;border-radius:50%;display:inline-block;border:2px solid;background:transparent;}
 
   .btn-share{background:white;border:1px solid var(--accent);color:var(--accent);font-size:12px;padding:6px 12px;}
   .autocomplete-wrap{position:relative;}
@@ -230,6 +257,24 @@
     line-height:1.5;
   }
   .share-banner .actions{margin-top:8px;display:flex;gap:8px;}
+  .toast{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink);
+    color:white;
+    padding:10px 16px;
+    border-radius:8px;
+    font-size:13px;
+    max-width:90vw;
+    box-shadow:0 6px 20px rgba(0,0,0,0.2);
+    z-index:100;
+    opacity:0;
+    transition:opacity 0.2s ease, transform 0.2s ease;
+    pointer-events:none;
+  }
+  .toast.visible{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
@@ -298,6 +343,9 @@ https://maps.app.goo.gl/..."></textarea>
 
     <div class="card">
       <h2>Étapes de l'itinéraire</h2>
+      <button type="button" class="btn-secondary" id="btn-reordonner" style="width:100%;margin-bottom:12px;">🧭 Réordonner géographiquement</button>
+
+      <div class="filters-label">Statut</div>
       <div class="filters" id="filters">
         <button data-f="all" class="active">Toutes</button>
         <button data-f="brouillon">Brouillon</button>
@@ -305,7 +353,18 @@ https://maps.app.goo.gl/..."></textarea>
         <button data-f="valide">Validé</button>
         <button data-f="supprimee">Supprimées</button>
       </div>
+
+      <div class="filters-label">Thème</div>
+      <div class="filters" id="filters-categorie">
+        <button data-c="all" class="active">Tous</button>
+        <button data-c="hebergement">🏨 Hébergement</button>
+        <button data-c="activite">📸 Activité</button>
+        <button data-c="resto">🍴 Resto</button>
+        <button data-c="deplacement">🚗 Déplacement</button>
+      </div>
+
       <div id="liste-etapes"></div>
+      <div class="empty" style="margin-top:6px;">Astuce mobile : glisse une étape vers la gauche pour la supprimer.</div>
     </div>
 
     <div class="card">
@@ -318,12 +377,19 @@ https://maps.app.goo.gl/..."></textarea>
   <div class="map-col">
     <div class="map-card">
       <svg id="svg-map" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg"></svg>
-      <div class="map-legend">
-        <span><i class="dot" style="background:#9CA3AF"></i> Brouillon</span>
-        <span><i class="dot" style="background:#F59E0B"></i> En validation</span>
-        <span><i class="dot" style="background:#16A34A"></i> Validé</span>
+      <div class="map-legend-row">
+        <span>🏨 Hébergement</span>
+        <span>📸 Activité</span>
+        <span>🍴 Resto</span>
+        <span>🚗 Déplacement</span>
       </div>
-      <div class="map-caption">Carte schématique (positions approximatives, pas à l'échelle GPS exacte) — sert à visualiser la répartition géographique de l'itinéraire, pas à naviguer.</div>
+      <div class="map-legend-row">
+        <span><i class="ring" style="border-color:#9CA3AF"></i> Brouillon</span>
+        <span><i class="ring" style="border-color:#F59E0B"></i> En validation</span>
+        <span><i class="ring" style="border-color:#16A34A"></i> Validé</span>
+        <span style="color:var(--muted)">(bordure = statut)</span>
+      </div>
+      <div class="map-caption">Carte schématique (positions approximatives, pas à l'échelle GPS exacte) — couleur = thème, bordure = statut.</div>
     </div>
   </div>
 </div>
@@ -347,6 +413,19 @@ https://maps.app.goo.gl/..."></textarea>
     </div>
   </div>
 </dialog>
+
+<dialog id="dialog-confirm">
+  <div class="dialog-body">
+    <h3 id="confirm-titre">Confirmer</h3>
+    <div id="confirm-message" style="font-size:13px;color:var(--muted);"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button class="btn-primary" id="btn-confirm-oui" style="margin-top:0;">Confirmer</button>
+      <button class="btn-secondary" id="btn-confirm-non">Annuler</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
 
 <dialog id="dialog-import-partage">
   <div class="dialog-body">
@@ -372,6 +451,12 @@ const CATEGORIES = {
   hebergement: "Hébergement",
   resto: "Restaurant",
   deplacement: "Déplacement",
+};
+const CATEGORIE_STYLE = {
+  activite: {color:"#8B5CF6", icon:"📸"},
+  hebergement: {color:"#0EA5E9", icon:"🏨"},
+  resto: {color:"#F97316", icon:"🍴"},
+  deplacement: {color:"#64748B", icon:"🚗"},
 };
 
 // Coordonnées approximatives des destinations courantes (pas d'appel réseau externe)
@@ -465,25 +550,67 @@ function trouverCoords(ville){
   return match ? LIEUX_CONNUS[match] : null;
 }
 
-// --- Autocomplétion du champ ville ---
+// --- Autocomplétion du champ ville : liste locale instantanée + suggestions live OpenStreetMap ---
 const VILLES_LISTE = Object.keys(LIEUX_CONNUS).map(v => v.replace(/\b\w/g, c => c.toUpperCase()));
 const inputVille = document.getElementById('f-ville');
 const boxSuggestions = document.getElementById('f-ville-suggestions');
+let coordsSelection = null; // coordonnées exactes si l'utilisateur a cliqué une suggestion live
+let debounceLive = null;
+
+function itemsLocaux(q){
+  return VILLES_LISTE.filter(v => v.toLowerCase().includes(q)).slice(0, 6).map(v => ({label: v, source: 'local'}));
+}
 
 function afficherSuggestions(valeur){
+  coordsSelection = null;
   const q = valeur.trim().toLowerCase();
+  clearTimeout(debounceLive);
   if(!q){ boxSuggestions.style.display = 'none'; return; }
-  const matches = VILLES_LISTE.filter(v => v.toLowerCase().includes(q)).slice(0, 8);
-  if(matches.length === 0){ boxSuggestions.style.display = 'none'; return; }
-  boxSuggestions.innerHTML = matches.map(v => `<div data-v="${escapeHtml(v)}">${escapeHtml(v)}</div>`).join('');
+  peindreSuggestions(itemsLocaux(q));
+  if(q.length >= 3){
+    debounceLive = setTimeout(() => rechercherOSM(valeur.trim(), itemsLocaux(q)), 400);
+  }
+}
+
+async function rechercherOSM(q, locaux){
+  try{
+    const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=lk&limit=5&q=${encodeURIComponent(q)}`;
+    const res = await fetch(url);
+    if(!res.ok) return;
+    const json = await res.json();
+    const live = json.map(r => ({
+      label: r.display_name.split(',')[0].trim(),
+      source: 'live',
+      lat: parseFloat(r.lat),
+      lon: parseFloat(r.lon),
+    }));
+    const combinees = [...locaux];
+    live.forEach(l => {
+      if(!combinees.some(c => c.label.toLowerCase() === l.label.toLowerCase())) combinees.push(l);
+    });
+    peindreSuggestions(combinees);
+  }catch(e){
+    // pas de connexion / service indisponible -> on garde les suggestions locales déjà affichées
+  }
+}
+
+function peindreSuggestions(items){
+  if(items.length === 0){ boxSuggestions.style.display = 'none'; return; }
+  boxSuggestions._items = items;
+  boxSuggestions.innerHTML = items.map((it, i) =>
+    `<div data-i="${i}">${it.source === 'live' ? '🌐 ' : ''}${escapeHtml(it.label)}</div>`
+  ).join('') + `<div style="padding:4px 10px;font-size:10px;color:var(--muted);">🌐 = résultat en direct via OpenStreetMap</div>`;
   boxSuggestions.style.display = 'block';
 }
+
 inputVille.addEventListener('input', () => afficherSuggestions(inputVille.value));
 inputVille.addEventListener('focus', () => afficherSuggestions(inputVille.value));
 boxSuggestions.addEventListener('mousedown', (ev) => {
-  const target = ev.target.closest('[data-v]');
+  const target = ev.target.closest('[data-i]');
   if(!target) return;
-  inputVille.value = target.dataset.v;
+  const item = boxSuggestions._items[parseInt(target.dataset.i, 10)];
+  inputVille.value = item.label;
+  coordsSelection = item.source === 'live' ? {lat: item.lat, lon: item.lon} : null;
   boxSuggestions.style.display = 'none';
 });
 document.addEventListener('click', (ev) => {
@@ -509,35 +636,54 @@ const ISLAND_PATH = "M 140 20 C 170 22 195 45 205 80 C 225 130 245 190 250 250 C
 
 function renderMap(){
   const svg = document.getElementById('svg-map');
-  const filtre = document.querySelector('#filters button.active').dataset.f;
+  const filtreStatut = document.querySelector('#filters button.active').dataset.f;
+  const filtreCategorie = document.querySelector('#filters-categorie button.active').dataset.c;
   let html = `<path d="${ISLAND_PATH}" fill="#D8ECE3" stroke="#B7DCCB" stroke-width="2"/>`;
 
   const visibles = data.etapes.filter(e => {
     if(e.lat == null) return false;
-    if(filtre !== 'all') return e.statut === filtre;
+    if(filtreCategorie !== 'all' && e.categorie !== filtreCategorie) return false;
+    if(filtreStatut !== 'all') return e.statut === filtreStatut;
     return e.statut !== 'supprimee';
   });
 
-  // Regroupe les étapes qui partagent la même position pour éviter les libellés superposés
+  // Regroupe par position ET par thème (un hébergement et un déplacement dans la même ville
+  // restent deux pins distincts au lieu de fondre en un pin générique gris)
+  const OFFSETS = {
+    hebergement: {dx:-9, dy:-7},
+    activite: {dx:9, dy:-7},
+    resto: {dx:-9, dy:7},
+    deplacement: {dx:9, dy:7},
+  };
   const groupes = {};
   visibles.forEach(e => {
     const {x, y} = project(e.lat, e.lon);
-    const key = `${Math.round(x)},${Math.round(y)}`;
-    if(!groupes[key]) groupes[key] = {x, y, etapes: []};
+    const base = `${Math.round(x)},${Math.round(y)}`;
+    const key = `${base}|${e.categorie}`;
+    if(!groupes[key]) groupes[key] = {base, x: Math.round(x), y: Math.round(y), categorie: e.categorie, etapes: []};
     groupes[key].etapes.push(e);
   });
 
+  const labelPose = new Set();
   Object.values(groupes).forEach(g => {
+    const off = OFFSETS[g.categorie] || {dx:0, dy:0};
+    const gx = g.x + off.dx, gy = g.y + off.dy;
     const statuts = g.etapes.map(e => e.statut);
-    const couleur = statuts.every(s => s === statuts[0]) ? colorFor(statuts[0]) : "#6366F1";
-    const titre = g.etapes.map(e => `${e.nom} (${STATUTS[e.statut].label})`).join(' · ');
-    let label = g.etapes.length > 1 ? `${g.etapes[0].ville} (${g.etapes.length})` : g.etapes[0].nom;
-    if(label.length > 22) label = label.slice(0, 21) + '…';
-    const versLaGauche = g.x > 210;
-    const textX = versLaGauche ? g.x - 8 : g.x + 8;
-    const anchor = versLaGauche ? 'end' : 'start';
-    html += `<circle cx="${g.x}" cy="${g.y}" r="6" fill="${couleur}" stroke="white" stroke-width="1.5"><title>${escapeHtml(titre)}</title></circle>`;
-    html += `<text x="${textX}" y="${g.y+3}" text-anchor="${anchor}" class="pin-label">${escapeHtml(label)}</text>`;
+    const bordure = statuts.every(s => s === statuts[0]) ? colorFor(statuts[0]) : "#111827";
+    const style = CATEGORIE_STYLE[g.categorie];
+    const titre = g.etapes.map(e => `${e.nom} (${CATEGORIES[e.categorie]} · ${STATUTS[e.statut].label})`).join(' · ');
+    html += `<circle cx="${gx}" cy="${gy}" r="7" fill="${style.color}" stroke="${bordure}" stroke-width="2.5"><title>${escapeHtml(titre)}</title></circle>`;
+    html += `<text x="${gx}" y="${gy}" class="pin-icon">${style.icon}</text>`;
+
+    if(!labelPose.has(g.base)){
+      labelPose.add(g.base);
+      let label = g.etapes.length > 1 ? `${g.etapes[0].ville} (${g.etapes.length})` : g.etapes[0].nom;
+      if(label.length > 22) label = label.slice(0, 21) + '…';
+      const versLaGauche = g.x > 210;
+      const textX = versLaGauche ? g.x - 14 : g.x + 14;
+      const anchor = versLaGauche ? 'end' : 'start';
+      html += `<text x="${textX}" y="${g.y + 3}" text-anchor="${anchor}" class="pin-label">${escapeHtml(label)}</text>`;
+    }
   });
 
   svg.innerHTML = html;
@@ -549,9 +695,37 @@ function escapeHtml(s){
   return d.innerHTML;
 }
 
+// --- Confirmation et notification maison (window.confirm/alert peuvent être bloqués en iframe) ---
+function confirmerAction(titre, message){
+  return new Promise((resolve) => {
+    document.getElementById('confirm-titre').textContent = titre;
+    document.getElementById('confirm-message').textContent = message;
+    const dlg = document.getElementById('dialog-confirm');
+    const oui = document.getElementById('btn-confirm-oui');
+    const non = document.getElementById('btn-confirm-non');
+    const onOui = () => { dlg.close(); nettoyer(); resolve(true); };
+    const onNon = () => { dlg.close(); nettoyer(); resolve(false); };
+    function nettoyer(){
+      oui.removeEventListener('click', onOui);
+      non.removeEventListener('click', onNon);
+    }
+    oui.addEventListener('click', onOui);
+    non.addEventListener('click', onNon);
+    dlg.showModal();
+  });
+}
+let toastTimer = null;
+function afficherToast(message){
+  const t = document.getElementById('toast');
+  t.textContent = message;
+  t.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('visible'), 3000);
+}
+
 // --- Formulaire d'ajout ---
-function creerEtape({nom, ville, categorie, dates, liens, notes, statut}){
-  const coords = trouverCoords(ville);
+function creerEtape({nom, ville, categorie, dates, liens, notes, statut, coordsOverride}){
+  const coords = coordsOverride ? [coordsOverride.lat, coordsOverride.lon] : trouverCoords(ville);
   return {
     id: crypto.randomUUID(),
     nom, ville, categorie, dates: dates || "", liens: liens || [], notes,
@@ -573,12 +747,13 @@ document.getElementById('form-etape').addEventListener('submit', (ev) => {
   const notes = document.getElementById('f-notes').value.trim();
   const statusEl = document.getElementById('f-status');
 
-  const etape = creerEtape({nom, ville, categorie, dates, liens, notes});
+  const etape = creerEtape({nom, ville, categorie, dates, liens, notes, coordsOverride: coordsSelection});
+  coordsSelection = null;
   data.etapes.push(etape);
   logJournal(`Ajout de "${nom}" (${CATEGORIES[categorie]}) en brouillon.`);
   save();
 
-  statusEl.textContent = etape.lat != null ? "" : "⚠️ Ville non reconnue dans notre liste — le lieu est ajouté mais n'apparaîtra pas sur la carte.";
+  statusEl.textContent = etape.lat != null ? "" : "⚠️ Ville non reconnue — le lieu est ajouté mais n'apparaîtra pas sur la carte. Choisis une suggestion dans la liste pour le localiser.";
   ev.target.reset();
   document.getElementById('f-categorie').value = categorie;
   renderAll();
@@ -591,12 +766,22 @@ document.getElementById('filters').addEventListener('click', (ev) => {
   ev.target.classList.add('active');
   renderAll();
 });
+document.getElementById('filters-categorie').addEventListener('click', (ev) => {
+  if(ev.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('#filters-categorie button').forEach(b => b.classList.remove('active'));
+  ev.target.classList.add('active');
+  renderAll();
+});
 
 // --- Liste des étapes ---
 function renderListe(){
-  const filtre = document.querySelector('#filters button.active').dataset.f;
+  const filtreStatut = document.querySelector('#filters button.active').dataset.f;
+  const filtreCategorie = document.querySelector('#filters-categorie button.active').dataset.c;
   const el = document.getElementById('liste-etapes');
-  const visibles = data.etapes.filter(e => filtre === 'all' ? true : e.statut === filtre);
+  const visibles = data.etapes.filter(e => {
+    if(filtreCategorie !== 'all' && e.categorie !== filtreCategorie) return false;
+    return filtreStatut === 'all' ? true : e.statut === filtreStatut;
+  });
 
   if(visibles.length === 0){
     el.innerHTML = `<div class="empty">Aucune étape pour ce filtre.</div>`;
@@ -607,39 +792,85 @@ function renderListe(){
     const tag = meteoTagFor(e.ville);
     const liens = e.liens || [];
     return `
-    <div class="etape statut-${e.statut}" data-id="${e.id}">
-      <div class="etape-top">
-        <div>
-          <strong>${escapeHtml(e.nom)}</strong>
-          <div class="etape-meta">${escapeHtml(e.ville)} · ${CATEGORIES[e.categorie]}${e.dates ? ` · ${escapeHtml(e.dates)}` : ""}</div>
+    <div class="etape-swipe" data-id="${e.id}">
+      <div class="etape-delete-bg">🗑️ Supprimer</div>
+      <div class="etape statut-${e.statut}">
+        <div class="etape-top">
+          <div>
+            <strong>${escapeHtml(e.nom)}</strong>
+            <div class="etape-meta">${escapeHtml(e.ville)} · ${CATEGORIES[e.categorie]}${e.dates ? ` · ${escapeHtml(e.dates)}` : ""}</div>
+          </div>
+          <span class="badge badge-${e.statut}">${STATUTS[e.statut].label}</span>
         </div>
-        <span class="badge badge-${e.statut}">${STATUTS[e.statut].label}</span>
-      </div>
-      ${e.notes ? `<div class="etape-meta">${escapeHtml(e.notes)}</div>` : ""}
-      ${tag ? `<span class="meteo-tag">🌦️ ${tag}</span>` : ""}
-      ${e.lat == null ? `<span class="no-position">📍 Pas sur la carte (ville non reconnue)</span>` : ""}
-      ${liens.length ? `<div class="liens-chips">${liens.map((l, i) => `<a class="lien-chip" href="${escapeHtml(l)}" target="_blank" rel="noopener">🔗 lien ${i+1}</a>`).join('')}</div>` : ""}
-      <div class="etape-actions">
-        <select class="select-statut">
-          ${Object.keys(STATUTS).map(s => `<option value="${s}" ${s===e.statut?'selected':''}>${STATUTS[s].label}</option>`).join('')}
-        </select>
-        <button class="btn-link btn-historique">Historique (${e.historique.length})</button>
+        ${e.notes ? `<div class="etape-meta">${escapeHtml(e.notes)}</div>` : ""}
+        ${tag ? `<span class="meteo-tag">🌦️ ${tag}</span>` : ""}
+        ${e.lat == null ? `<span class="no-position">📍 Pas sur la carte (ville non reconnue)</span>` : ""}
+        ${liens.length ? `<div class="liens-chips">${liens.map((l, i) => `<a class="lien-chip" href="${escapeHtml(l)}" target="_blank" rel="noopener">🔗 lien ${i+1}</a>`).join('')}</div>` : ""}
+        <div class="etape-actions">
+          <select class="select-statut">
+            ${Object.keys(STATUTS).map(s => `<option value="${s}" ${s===e.statut?'selected':''}>${STATUTS[s].label}</option>`).join('')}
+          </select>
+          <button class="btn-link btn-historique">Historique (${e.historique.length})</button>
+        </div>
       </div>
     </div>`;
   }).join('');
 
   el.querySelectorAll('.select-statut').forEach(sel => {
     sel.addEventListener('change', (ev) => {
-      const id = ev.target.closest('.etape').dataset.id;
+      const id = ev.target.closest('.etape-swipe').dataset.id;
       changerStatut(id, ev.target.value);
     });
   });
   el.querySelectorAll('.btn-historique').forEach(btn => {
     btn.addEventListener('click', (ev) => {
-      const id = ev.target.closest('.etape').dataset.id;
+      const id = ev.target.closest('.etape-swipe').dataset.id;
       afficherHistorique(id);
     });
   });
+  el.querySelectorAll('.etape-swipe').forEach(wireSwipeToDelete);
+}
+
+// --- Glisser vers la gauche pour supprimer (mobile) ---
+function wireSwipeToDelete(wrap){
+  const front = wrap.querySelector('.etape');
+  const SEUIL = 70;
+  let startX = null, dx = 0, active = false;
+
+  const onDown = (x) => { startX = x; dx = 0; active = true; front.style.transition = 'none'; };
+  const onMove = (x) => {
+    if(!active) return;
+    dx = Math.min(0, Math.max(x - startX, -120));
+    front.style.transform = `translateX(${dx}px)`;
+  };
+  const onUp = () => {
+    if(!active) return;
+    active = false;
+    front.style.transition = 'transform 0.18s ease';
+    if(dx < -SEUIL){
+      front.style.transform = 'translateX(-100%)';
+      const id = wrap.dataset.id;
+      setTimeout(() => supprimerEtape(id), 160);
+    } else {
+      front.style.transform = 'translateX(0)';
+    }
+  };
+
+  front.addEventListener('touchstart', (ev) => onDown(ev.touches[0].clientX), {passive:true});
+  front.addEventListener('touchmove', (ev) => onMove(ev.touches[0].clientX), {passive:true});
+  front.addEventListener('touchend', onUp);
+
+  front.addEventListener('pointerdown', (ev) => {
+    if(ev.pointerType === 'touch') return; // déjà géré par touchstart
+    onDown(ev.clientX);
+    front.setPointerCapture(ev.pointerId);
+  });
+  front.addEventListener('pointermove', (ev) => { if(ev.pointerType !== 'touch') onMove(ev.clientX); });
+  front.addEventListener('pointerup', (ev) => { if(ev.pointerType !== 'touch') onUp(); });
+}
+
+function supprimerEtape(id){
+  changerStatut(id, 'supprimee');
 }
 
 function changerStatut(id, nouveauStatut){
@@ -726,8 +957,44 @@ const ITINERAIRE_MARIAGE = [
    notes:"Route ou train, 2-2h30. Retour en famille, vol retour selon horaire."},
 ];
 
-document.getElementById('btn-seed').addEventListener('click', () => {
-  if(!confirm(`Charger l'itinéraire type du voyage de noces (${ITINERAIRE_MARIAGE.length} étapes, en brouillon) ? Elles seront ajoutées à celles déjà présentes.`)) return;
+// --- Réordonner géographiquement (plus proche voisin, approximatif) ---
+function reordonnerGeographiquement(){
+  const avecCoord = data.etapes.filter(e => e.lat != null && e.statut !== 'supprimee');
+  const reste = data.etapes.filter(e => e.lat == null || e.statut === 'supprimee');
+  if(avecCoord.length < 3) return;
+
+  const restant = [...avecCoord];
+  const ordre = [restant.shift()];
+  while(restant.length){
+    const dernier = ordre[ordre.length - 1];
+    let idxPlusProche = 0, distMin = Infinity;
+    restant.forEach((e, i) => {
+      const d = Math.hypot(e.lat - dernier.lat, e.lon - dernier.lon);
+      if(d < distMin){ distMin = d; idxPlusProche = i; }
+    });
+    ordre.push(restant.splice(idxPlusProche, 1)[0]);
+  }
+  data.etapes = [...ordre, ...reste];
+  logJournal(`Itinéraire réordonné géographiquement (${ordre.length} étapes, algorithme plus-proche-voisin).`);
+  save();
+  renderAll();
+}
+document.getElementById('btn-reordonner').addEventListener('click', () => {
+  const eligibles = data.etapes.filter(e => e.lat != null && e.statut !== 'supprimee').length;
+  if(eligibles < 3){
+    afficherToast("Il faut au moins 3 étapes localisées sur la carte pour réordonner.");
+    return;
+  }
+  reordonnerGeographiquement();
+  afficherToast("Itinéraire réordonné géographiquement.");
+});
+
+document.getElementById('btn-seed').addEventListener('click', async () => {
+  const ok = await confirmerAction(
+    "Charger l'itinéraire type ?",
+    `${ITINERAIRE_MARIAGE.length} étapes seront ajoutées en brouillon, en plus de celles déjà présentes.`
+  );
+  if(!ok) return;
   ITINERAIRE_MARIAGE.forEach(item => {
     data.etapes.push(creerEtape(item));
   });
