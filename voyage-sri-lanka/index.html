@@ -41,8 +41,30 @@
     grid-template-columns: 380px 1fr;
     align-items:start;
   }
+  .mobile-tabs{display:none;}
   @media (max-width: 900px){
     .layout{grid-template-columns: 1fr;}
+    .mobile-tabs{
+      display:flex;
+      gap:8px;
+      padding:10px 16px;
+      background:var(--panel);
+      border-bottom:1px solid var(--border);
+      position:sticky;
+      top:0;
+      z-index:30;
+    }
+    .mobile-tabs button{
+      flex:1;
+      background:white;
+      border:1px solid var(--border);
+      font-size:13px;
+      padding:8px;
+    }
+    .mobile-tabs button.active{background:var(--ink);color:white;border-color:var(--ink);}
+    body.vue-carte .sidebar{display:none;}
+    body.vue-liste .map-col{display:none;}
+    .map-col{position:static;}
   }
   .sidebar{
     padding:16px;
@@ -219,6 +241,11 @@
     <button class="btn-share" id="btn-partager">🔗 Partager l'itinéraire</button>
   </div>
 </header>
+
+<div class="mobile-tabs">
+  <button type="button" id="tab-liste" class="active">📋 Liste</button>
+  <button type="button" id="tab-carte">🗺️ Carte</button>
+</div>
 
 <div class="layout">
   <div class="sidebar">
@@ -769,6 +796,22 @@ function verifierLienPartage(){
     document.getElementById('dialog-import-partage').close();
   };
 }
+
+// --- Onglets mobile (Liste / Carte) ---
+document.body.classList.add('vue-liste');
+document.getElementById('tab-liste').addEventListener('click', () => {
+  document.body.classList.add('vue-liste');
+  document.body.classList.remove('vue-carte');
+  document.getElementById('tab-liste').classList.add('active');
+  document.getElementById('tab-carte').classList.remove('active');
+});
+document.getElementById('tab-carte').addEventListener('click', () => {
+  document.body.classList.add('vue-carte');
+  document.body.classList.remove('vue-liste');
+  document.getElementById('tab-carte').classList.add('active');
+  document.getElementById('tab-liste').classList.remove('active');
+  renderMap();
+});
 
 verifierLienPartage();
 renderAll();
