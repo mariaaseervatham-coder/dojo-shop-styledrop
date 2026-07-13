@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mon voyage au Sri Lanka</title>
+<style>
+  :root{
+    --brouillon:#9CA3AF;
+    --validation:#F59E0B;
+    --valide:#16A34A;
+    --supprimee:#DC2626;
+    --bg:#F7F5F2;
+    --panel:#FFFFFF;
+    --ink:#1F2937;
+    --muted:#6B7280;
+    --border:#E5E7EB;
+    --accent:#0F766E;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  header{
+    padding:16px 24px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  header h1{font-size:18px;margin:0;}
+  header .dates{font-size:13px;color:var(--muted);}
+  .layout{
+    display:grid;
+    grid-template-columns: 380px 1fr;
+    align-items:start;
+  }
+  .mobile-tabs{display:none;}
+  @media (max-width: 900px){
+    .layout{grid-template-columns: 1fr;}
+    .mobile-tabs{
+      display:flex;
+      gap:8px;
+      padding:10px 16px;
+      background:var(--panel);
+      border-bottom:1px solid var(--border);
+      position:sticky;
+      top:0;
+      z-index:30;
+    }
+    .mobile-tabs button{
+      flex:1;
+      background:white;
+      border:1px solid var(--border);
+      font-size:13px;
+      padding:8px;
+    }
+    .mobile-tabs button.active{background:var(--ink);color:white;border-color:var(--ink);}
+    body.vue-carte .sidebar{display:none;}
+    body.vue-liste .map-col{display:none;}
+    .map-col{position:static;}
+  }
+  .sidebar{
+    padding:16px;
+    border-right:1px solid var(--border);
+    background:var(--panel);
+  }
+  .map-col{
+    padding:16px;
+    position:sticky;
+    top:0;
+  }
+  .card{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:14px;
+  }
+  .card h2{font-size:14px;margin:0 0 8px 0;}
+  .insight{
+    background:#FFF7ED;
+    border:1px solid #FDBA74;
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13px;
+    margin-bottom:14px;
+    line-height:1.5;
+  }
+  .insight b{color:#9A3412;}
+  label{display:block;font-size:12px;color:var(--muted);margin-top:8px;margin-bottom:3px;}
+  input, select, textarea{
+    width:100%;
+    padding:7px 8px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:13px;
+    font-family:inherit;
+  }
+  textarea{resize:vertical;min-height:44px;}
+  button{
+    cursor:pointer;
+    border:none;
+    border-radius:6px;
+    font-size:13px;
+    padding:8px 12px;
+    font-family:inherit;
+  }
+  .btn-primary{background:var(--accent);color:white;width:100%;margin-top:12px;}
+  .btn-secondary{background:white;border:1px solid var(--border);color:var(--ink);}
+  .btn-link{background:none;color:var(--accent);padding:2px 4px;font-size:12px;text-decoration:underline;}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+  .filters button{background:white;border:1px solid var(--border);font-size:12px;padding:5px 10px;}
+  .filters button.active{background:var(--ink);color:white;border-color:var(--ink);}
+  .filters-label{font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em;}
+  .etape-swipe{
+    position:relative;
+    overflow:hidden;
+    border-radius:8px;
+    margin-bottom:10px;
+  }
+  .etape-delete-bg{
+    position:absolute;
+    inset:0;
+    background:var(--supprimee);
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    padding-right:18px;
+    font-size:12px;
+    font-weight:600;
+    border-radius:8px;
+    opacity:0;
+    transition:opacity 0.1s ease;
+  }
+  .etape-edit-bg{
+    position:absolute;
+    inset:0;
+    background:#2563EB;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    padding-left:18px;
+    font-size:12px;
+    font-weight:600;
+    border-radius:8px;
+    opacity:0;
+    transition:opacity 0.1s ease;
+  }
+  .leg-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:5px 4px 5px 16px;
+    margin-bottom:8px;
+    font-size:11px;
+    color:var(--muted);
+    cursor:pointer;
+    border-left:2px dashed var(--border);
+    margin-left:8px;
+  }
+  .leg-row:hover{color:var(--accent);}
+  .leg-row .leg-icon{font-size:12px;}
+  .apercu-card{display:flex;gap:8px;margin-top:6px;padding:8px;background:white;border:1px solid var(--border);border-radius:8px;}
+  .apercu-card img{width:52px;height:52px;object-fit:cover;border-radius:6px;flex-shrink:0;}
+  .apercu-texte{font-size:11px;color:var(--muted);}
+  .apercu-texte strong{display:block;font-size:12px;color:var(--ink);margin-bottom:2px;}
+  .apercu-texte p{margin:0 0 4px 0;}
+  .theme-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+  .theme-row input[type="text"]{margin:0;}
+  .loc-status{font-size:12px;border-radius:6px;padding:6px 8px;margin-top:6px;line-height:1.4;}
+  .loc-ok{background:#ECFDF5;color:#065F46;border:1px solid #6EE7B7;}
+  .loc-warn{background:var(--noposition-bg,#FEF2F2);color:var(--noposition-ink,#B91C1C);border:1px solid #FCA5A5;}
+  .preview-item{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;}
+  .preview-item input[type="checkbox"]{margin-top:3px;}
+  .preview-item em{color:var(--muted);font-style:italic;}
+  .apercu-lien-card{display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;text-decoration:none;color:var(--ink);}
+  .apercu-lien-card img{width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;background:white;}
+  .apercu-lien-card.apercu-lien-image img{width:56px;height:56px;}
+  .apercu-lien-card strong{display:block;font-size:12px;}
+  .apercu-lien-extrait{font-size:11px;color:var(--muted);}
+  .etape[data-clickable]{cursor:pointer;}
+  .etape{
+    background:white;
+    border:1px solid var(--border);
+    border-left:4px solid var(--brouillon);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:0;
+    position:relative;
+    touch-action:pan-y;
+    will-change:transform;
+  }
+  .etape.statut-brouillon{border-left-color:var(--brouillon);}
+  .etape.statut-validation{border-left-color:var(--validation);}
+  .etape.statut-valide{border-left-color:var(--valide);}
+  .etape.statut-supprimee{border-left-color:var(--supprimee); opacity:0.55;}
+  .etape-top{display:flex;justify-content:space-between;align-items:start;gap:8px;}
+  .etape-top strong{font-size:14px;}
+  .etape-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+  .badge{
+    font-size:10px;
+    padding:2px 7px;
+    border-radius:999px;
+    color:white;
+    white-space:nowrap;
+  }
+  .badge-brouillon{background:var(--brouillon);}
+  .badge-validation{background:var(--validation);}
+  .badge-valide{background:var(--valide);}
+  .badge-supprimee{background:var(--supprimee);}
+  .etape-actions{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;}
+  .etape-actions select{width:auto;font-size:12px;padding:4px 6px;}
+  .meteo-tag{
+    display:inline-block;
+    font-size:11px;
+    background:#EFF6FF;
+    color:#1D4ED8;
+    border-radius:6px;
+    padding:2px 6px;
+    margin-top:6px;
+  }
+  .no-position{
+    display:inline-block;
+    font-size:11px;
+    background:#FEF2F2;
+    color:#B91C1C;
+    border-radius:6px;
+    padding:2px 6px;
+    margin-top:6px;
+  }
+  .journal{max-height:220px;overflow-y:auto;font-size:12px;}
+  .journal-entry{padding:5px 0;border-bottom:1px dashed var(--border);color:var(--muted);}
+  .journal-entry:last-child{border-bottom:none;}
+  .empty{font-size:12px;color:var(--muted);font-style:italic;}
+  .history-list{font-size:12px;margin-top:6px;padding-left:14px;}
+  dialog{
+    border:none;
+    border-radius:10px;
+    padding:0;
+    max-width:420px;
+    width:90%;
+  }
+  dialog::backdrop{background:rgba(0,0,0,0.4);}
+  .dialog-body{padding:16px;}
+  .dialog-body h3{margin-top:0;font-size:15px;}
+
+  .map-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .map-caption{font-size:11px;color:var(--muted);margin-top:8px;}
+  .map-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:8px;}
+  .map-legend span{display:inline-flex;align-items:center;gap:4px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .map-zoom-wrap{overflow:hidden;border-radius:8px;background:#EAF4F0;touch-action:none;}
+  #svg-map{width:100%;height:auto;display:block;transform-origin:0 0;cursor:grab;}
+  #svg-map.dragging{cursor:grabbing;}
+  .pin-group{cursor:pointer;}
+  .map-zoom-controls{display:flex;gap:6px;margin-top:8px;}
+  .map-zoom-controls button{background:white;border:1px solid var(--border);font-size:12px;padding:5px 10px;}
+  .pin-label{font-size:9px;fill:#374151;}
+  .pin-icon{font-size:8px;text-anchor:middle;dominant-baseline:central;}
+  .zone-label{font-size:9px;fill:#9CA3AF;font-style:italic;}
+  .route-line{stroke:#111827;stroke-width:1.5;stroke-dasharray:4 3;fill:none;}
+  .route-label{font-size:7px;fill:#111827;font-weight:600;}
+  .pin-selected{stroke:#111827;stroke-width:3;}
+  .map-legend-row{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:6px;}
+  .map-legend-row span{display:inline-flex;align-items:center;gap:4px;}
+  .ring{width:10px;height:10px;border-radius:50%;display:inline-block;border:2px solid;background:transparent;}
+
+  .btn-share{background:white;border:1px solid var(--accent);color:var(--accent);font-size:12px;padding:6px 12px;}
+  .autocomplete-wrap{position:relative;}
+  .suggestions{
+    position:absolute;
+    top:100%;
+    left:0;
+    right:0;
+    background:white;
+    border:1px solid var(--border);
+    border-radius:6px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.08);
+    max-height:180px;
+    overflow-y:auto;
+    z-index:20;
+    margin-top:2px;
+  }
+  .suggestions div{
+    padding:6px 10px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .suggestions div:hover, .suggestions div.active{background:var(--bg);}
+  .liens-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .lien-chip{
+    font-size:11px;
+    background:#F3F4F6;
+    border-radius:6px;
+    padding:2px 8px;
+    color:var(--accent);
+    text-decoration:none;
+  }
+  .share-banner{
+    background:#ECFDF5;
+    border:1px solid #6EE7B7;
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13px;
+    margin-bottom:14px;
+    line-height:1.5;
+  }
+  .share-banner .actions{margin-top:8px;display:flex;gap:8px;}
+  .toast{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink);
+    color:white;
+    padding:10px 16px;
+    border-radius:8px;
+    font-size:13px;
+    max-width:90vw;
+    box-shadow:0 6px 20px rgba(0,0,0,0.2);
+    z-index:100;
+    opacity:0;
+    transition:opacity 0.2s ease, transform 0.2s ease;
+    pointer-events:none;
+  }
+  .toast.visible{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🇱🇰 Mon voyage au Sri Lanka</h1>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="dates">16 août → 6 septembre 2026 · 22 jours</div>
+    <button class="btn-share" id="btn-partager">🔗 Partager l'itinéraire</button>
+  </div>
+</header>
+
+<div class="mobile-tabs">
+  <button type="button" id="tab-liste" class="active">📋 Liste</button>
+  <button type="button" id="tab-carte">🗺️ Carte</button>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+
+    <div id="share-import-banner"></div>
+
+    <div class="insight">
+      <b>À savoir pour tes dates :</b> mi-août à début septembre, la mousson du sud-ouest touche encore
+      la côte Ouest/Sud et les collines (Colombo, Galle, Ella, Nuwara Eliya) — pluies possibles,
+      surtout l'après-midi. La côte <b>Est</b> (Trincomalee, Arugam Bay, Pasikuda) et le <b>Nord</b> (Jaffna)
+      sont eux en pleine saison sèche. Ce n'est pas une prévision (trop loin dans le temps), juste la
+      climatologie moyenne — utile pour arbitrer entre régions en attendant une vraie météo.
+    </div>
+
+    <div class="card">
+      <h2>Ajouter un lieu (Insta, Pinterest, Maps...)</h2>
+      <button type="button" class="btn-secondary" id="btn-importer-texte" style="width:100%;margin-bottom:8px;">📋 Importer depuis un texte</button>
+      <button type="button" class="btn-secondary" id="btn-seed" style="width:100%;margin-bottom:10px;">📥 Charger l'itinéraire type du voyage de noces</button>
+      <form id="form-etape">
+        <label>Nom du lieu *</label>
+        <input type="text" id="f-nom" required placeholder="ex: Ella Rock" autocomplete="off" />
+        <div id="f-apercu"></div>
+
+        <label>Ville / région *</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="f-ville" required placeholder="ex: Ella" autocomplete="off" />
+          <div class="suggestions" id="f-ville-suggestions" style="display:none;"></div>
+        </div>
+
+        <label>Dates (optionnel)</label>
+        <input type="text" id="f-dates" placeholder="ex: 18-19 août" />
+
+        <label>Thème</label>
+        <select id="f-categorie"></select>
+
+        <label>Lien(s) — un par ligne (Insta, Pinterest, Google Maps, blog...)</label>
+        <textarea id="f-liens" placeholder="https://instagram.com/p/...
+https://maps.app.goo.gl/..."></textarea>
+
+        <label>Notes</label>
+        <textarea id="f-notes" placeholder="pourquoi cet endroit t'a plu, infos pratiques..."></textarea>
+
+        <div id="f-status" class="empty" style="margin-top:6px;"></div>
+        <button type="submit" class="btn-primary">Ajouter à l'itinéraire</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Étapes de l'itinéraire</h2>
+      <button type="button" class="btn-secondary" id="btn-reordonner" style="width:100%;margin-bottom:8px;">✨ Générer l'itinéraire (ordre géographique)</button>
+      <button type="button" class="btn-secondary" id="btn-nettoyer" style="width:100%;margin-bottom:12px;">🧹 Nettoyer &amp; uniformiser les données</button>
+      <div class="empty" style="margin-bottom:12px;">Règles automatiques (titres/liens/notes) — pas une IA connectée à un vrai modèle.</div>
+
+      <div class="filters-label">Statut</div>
+      <div class="filters" id="filters">
+        <button data-f="all" class="active">Toutes</button>
+        <button data-f="brouillon">Brouillon</button>
+        <button data-f="validation">En validation</button>
+        <button data-f="valide">Validé</button>
+        <button data-f="supprimee">Supprimées</button>
+      </div>
+
+      <div class="filters-label">Thème <button type="button" class="btn-link" id="btn-gerer-themes">⚙️ gérer</button></div>
+      <div class="filters" id="filters-categorie"></div>
+
+      <div id="liste-etapes"></div>
+      <div class="empty" style="margin-top:6px;">Astuce mobile : glisse une étape vers la <strong>droite</strong> pour la modifier, vers la <strong>gauche</strong> pour la supprimer.</div>
+    </div>
+
+    <div class="card">
+      <h2>Journal d'activité <button class="btn-link" id="toggle-journal">afficher/masquer</button></h2>
+      <div class="journal" id="journal" style="display:none;"></div>
+    </div>
+
+  </div>
+
+  <div class="map-col">
+    <div class="map-card">
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+        <button type="button" class="btn-secondary" id="btn-mode-dessin" style="width:auto;flex:1;">🖊️ Dessiner l'itinéraire sur la carte</button>
+      </div>
+      <div id="dessin-controls" style="display:none;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+        <button type="button" class="btn-primary" id="btn-dessin-valider" style="width:auto;margin-top:0;">✅ Valider ce tracé</button>
+        <button type="button" class="btn-secondary" id="btn-dessin-annuler" style="width:auto;">↺ Recommencer</button>
+        <button type="button" class="btn-secondary" id="btn-dessin-quitter" style="width:auto;">Quitter le mode dessin</button>
+      </div>
+      <div class="map-zoom-wrap" id="map-zoom-wrap">
+        <svg id="svg-map" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="map-zoom-controls">
+        <button type="button" id="btn-zoom-in">➕ Zoom</button>
+        <button type="button" id="btn-zoom-out">➖ Zoom</button>
+        <button type="button" id="btn-zoom-reset">Réinitialiser</button>
+      </div>
+      <div class="map-legend-row" id="map-legend-themes"></div>
+      <div class="map-legend-row">
+        <span><i class="ring" style="border-color:#9CA3AF"></i> Brouillon</span>
+        <span><i class="ring" style="border-color:#F59E0B"></i> En validation</span>
+        <span><i class="ring" style="border-color:#16A34A"></i> Validé</span>
+        <span style="color:var(--muted)">(bordure = statut)</span>
+      </div>
+      <div class="map-caption">Carte schématique (positions approximatives, pas à l'échelle GPS exacte) — couleur = thème, bordure = statut. Clique un lieu pour son détail, ou active le mode dessin pour tracer l'itinéraire.</div>
+    </div>
+  </div>
+</div>
+
+<dialog id="dialog-historique">
+  <div class="dialog-body">
+    <h3 id="hist-titre">Historique</h3>
+    <div id="hist-content"></div>
+    <button class="btn-secondary" onclick="document.getElementById('dialog-historique').close()" style="margin-top:12px;">Fermer</button>
+  </div>
+</dialog>
+
+<dialog id="dialog-partage">
+  <div class="dialog-body">
+    <h3>Lien de partage</h3>
+    <p style="font-size:13px;color:var(--muted);">Ce lien contient une photo de ton itinéraire à l'instant présent. Ton ami peut l'ouvrir pour voir tes lieux et les importer dans son propre navigateur — ce n'est pas une synchronisation en direct, renvoie un nouveau lien après des changements importants.</p>
+    <textarea id="partage-url" readonly style="min-height:70px;font-size:11px;"></textarea>
+    <div style="margin-top:10px;display:flex;gap:8px;">
+      <button class="btn-primary" id="btn-copier-lien" style="margin-top:0;">Copier le lien</button>
+      <button class="btn-secondary" onclick="document.getElementById('dialog-partage').close()">Fermer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dialog-confirm">
+  <div class="dialog-body">
+    <h3 id="confirm-titre">Confirmer</h3>
+    <div id="confirm-message" style="font-size:13px;color:var(--muted);"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button class="btn-primary" id="btn-confirm-oui" style="margin-top:0;">Confirmer</button>
+      <button class="btn-secondary" id="btn-confirm-non">Annuler</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<dialog id="dialog-themes">
+  <div class="dialog-body">
+    <h3>Gérer les thèmes</h3>
+    <div id="themes-liste"></div>
+    <div class="theme-row" style="margin-top:10px;">
+      <input type="text" id="theme-nouvel-emoji" placeholder="🎯" style="width:50px;text-align:center;flex:none;" maxlength="4" />
+      <input type="text" id="theme-nouveau-label" placeholder="Nom du thème" style="flex:1;" />
+      <button type="button" class="btn-primary" id="btn-ajouter-theme" style="width:auto;margin-top:0;white-space:nowrap;">Ajouter</button>
+    </div>
+    <button type="button" class="btn-secondary" onclick="document.getElementById('dialog-themes').close()" style="margin-top:12px;width:100%;">Fermer</button>
+  </div>
+</dialog>
+
+<dialog id="dialog-leg">
+  <div class="dialog-body">
+    <h3 id="leg-titre">Trajet</h3>
+    <label>Comment tu te déplaces entre ces deux étapes</label>
+    <textarea id="leg-transport" placeholder="ex: Route privée, ~4h / Train Yal Devi, ~6h30"></textarea>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button type="button" class="btn-primary" id="btn-leg-enregistrer" style="margin-top:0;">Enregistrer</button>
+      <button type="button" class="btn-secondary" id="btn-leg-annuler">Annuler</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dialog-edition">
+  <div class="dialog-body">
+    <h3>Modifier l'étape</h3>
+    <form id="form-edition">
+      <label>Nom du lieu *</label>
+      <input type="text" id="edit-nom" required autocomplete="off" />
+      <div id="edit-apercu"></div>
+
+      <label>Ville / région *</label>
+      <div class="autocomplete-wrap">
+        <input type="text" id="edit-ville" required autocomplete="off" />
+        <div class="suggestions" id="edit-ville-suggestions" style="display:none;"></div>
+      </div>
+      <div id="edit-status"></div>
+
+      <label>Dates (optionnel)</label>
+      <input type="text" id="edit-dates" />
+
+      <label>Thème</label>
+      <select id="edit-categorie"></select>
+
+      <label>Lien(s) — un par ligne</label>
+      <textarea id="edit-liens"></textarea>
+
+      <label>Notes</label>
+      <textarea id="edit-notes"></textarea>
+
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button type="submit" class="btn-primary" style="margin-top:0;">Enregistrer</button>
+        <button type="button" class="btn-secondary" id="btn-edition-annuler">Annuler</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<dialog id="dialog-import-texte">
+  <div class="dialog-body">
+    <h3>Importer depuis un texte</h3>
+    <p style="font-size:12px;color:var(--muted);">Colle un itinéraire (email, notes, texte copié depuis Insta...). Reconnaissance simple par mots-clés — pas une vraie IA — vérifie la pré-liste avant d'ajouter.</p>
+    <textarea id="import-texte-source" style="min-height:110px;" placeholder="Colle ton texte ici..."></textarea>
+    <button type="button" class="btn-secondary" id="btn-analyser-texte" style="width:100%;margin-top:8px;">Analyser</button>
+    <div id="import-preview" style="margin-top:10px;"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button type="button" class="btn-primary" id="btn-import-ajouter" style="margin-top:0;display:none;">Ajouter les lieux cochés</button>
+      <button type="button" class="btn-secondary" id="btn-import-fermer">Fermer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dialog-detail">
+  <div class="dialog-body">
+    <h3 id="detail-titre"></h3>
+    <div id="detail-meta" style="font-size:12px;color:var(--muted);margin-bottom:6px;"></div>
+    <div id="detail-meteo"></div>
+    <div id="detail-notes" style="font-size:13px;margin:10px 0;white-space:pre-wrap;"></div>
+    <div id="detail-liens"></div>
+    <button type="button" class="btn-secondary" id="btn-detail-fermer" style="margin-top:6px;width:100%;">Fermer</button>
+  </div>
+</dialog>
+
+<dialog id="dialog-import-partage">
+  <div class="dialog-body">
+    <h3>Itinéraire partagé reçu</h3>
+    <div id="import-partage-detail" style="font-size:13px;color:var(--muted);"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button class="btn-primary" id="btn-importer-partage" style="margin-top:0;">Importer ces lieux</button>
+      <button class="btn-secondary" id="btn-ignorer-partage">Ignorer</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+const STORAGE_KEY = "sriLankaTripPlanner_v1";
+const STATUTS = {
+  brouillon: {label: "Brouillon", next: "validation"},
+  validation: {label: "En validation", next: "valide"},
+  valide: {label: "Validé", next: null},
+  supprimee: {label: "Supprimée", next: null},
+};
+const CATEGORIES_DEFAUT = [
+  {id:"hebergement", emoji:"🏨", label:"Hébergement", color:"#0EA5E9"},
+  {id:"activite", emoji:"📸", label:"Activité", color:"#8B5CF6"},
+  {id:"resto", emoji:"🍴", label:"Resto", color:"#F97316"},
+];
+function getCategorie(id){
+  return data.categories.find(c => c.id === id) || {id, emoji:"❔", label:"Thème supprimé", color:"#9CA3AF"};
+}
+
+// Coordonnées approximatives des destinations courantes (pas d'appel réseau externe)
+const LIEUX_CONNUS = {
+  "colombo": [6.9271, 79.8612],
+  "negombo": [7.2083, 79.8358],
+  "kalpitiya": [8.2333, 79.7667],
+  "galle": [6.0535, 80.2210],
+  "unawatuna": [6.0108, 80.2494],
+  "mirissa": [5.9483, 80.4589],
+  "weligama": [5.9739, 80.4297],
+  "hikkaduwa": [6.1408, 80.1017],
+  "bentota": [6.4260, 79.9955],
+  "tangalle": [6.0242, 80.7936],
+  "kandy": [7.2906, 80.6337],
+  "nuwara eliya": [6.9497, 80.7891],
+  "ella": [6.8667, 81.0466],
+  "haputale": [6.7674, 80.9564],
+  "adam's peak": [6.8096, 80.4994],
+  "horton plains": [6.8021, 80.7969],
+  "sigiriya": [7.9570, 80.7603],
+  "dambulla": [7.8675, 80.6517],
+  "anuradhapura": [8.3114, 80.4037],
+  "polonnaruwa": [7.9403, 81.0188],
+  "habarana": [8.0362, 80.7526],
+  "trincomalee": [8.5874, 81.2152],
+  "nilaveli": [8.6900, 81.1900],
+  "uppuveli": [8.6050, 81.2100],
+  "arugam bay": [6.8400, 81.8360],
+  "pasikuda": [7.9270, 81.5619],
+  "passekudah": [7.9270, 81.5619],
+  "kalkudah": [7.9100, 81.5450],
+  "batticaloa": [7.7167, 81.7000],
+  "jaffna": [9.6615, 80.0255],
+  "mannar": [8.9810, 79.9044],
+  "yala": [6.3725, 81.5185],
+  "udawalawe": [6.4390, 80.8983],
+  "koggala": [5.9930, 80.3230],
+  "peradeniya": [7.2690, 80.5970],
+  "matale": [7.4675, 80.6234],
+  "little adam's peak": [6.8580, 81.0530],
+  "ravana falls": [6.8280, 81.0570],
+  "diyaluma falls": [6.7290, 81.0290],
+  "nine arch bridge": [6.8770, 81.0610],
+};
+
+// Zones pour le tag météo (climatologie mi-août -> début sept)
+const REGIONS = [
+  {test: /colombo|galle|mirissa|unawatuna|bentota|hikkaduwa|weligama|matara|kalutara|negombo|tangalle|koggala/i, tag: "Côte Ouest/Sud — mousson possible"},
+  {test: /trincomalee|nilaveli|uppuveli|arugam|pasikuda|passekudah|batticaloa|kalkudah/i, tag: "Côte Est — saison sèche, meilleur moment de l'année"},
+  {test: /jaffna|mannar|point pedro/i, tag: "Nord — saison sèche"},
+  {test: /ella|nuwara eliya|kandy|haputale|hill country|adam's peak|horton|matale|peradeniya|ravana|diyaluma|nine arch/i, tag: "Collines — frais, pluie possible l'aprem"},
+  {test: /sigiriya|dambulla|anuradhapura|polonnaruwa|triangle culturel|habarana/i, tag: "Triangle culturel — chaud, sec en majorité"},
+];
+
+let data = load();
+migrerAnciensDeplacements();
+
+function load(){
+  let d = {etapes: [], journal: []};
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) d = JSON.parse(raw);
+  }catch(e){}
+  if(!d.legs) d.legs = {};
+  if(!d.categories || d.categories.length === 0) d.categories = CATEGORIES_DEFAUT.map(c => ({...c}));
+  // migration: ancien champ "lien" (texte unique) -> "liens" (tableau)
+  d.etapes.forEach(e => {
+    if(!e.liens){
+      e.liens = e.lien ? [e.lien] : [];
+      delete e.lien;
+    }
+    if(e.dates === undefined) e.dates = "";
+  });
+  return d;
+}
+
+// Les anciennes étapes de catégorie "déplacement" deviennent des notes de trajet
+// attachées entre l'étape qui précède et celle qui suit, au lieu d'être des étapes à part.
+function migrerAnciensDeplacements(){
+  const anciens = data.etapes.filter(e => e.categorie === 'deplacement');
+  if(anciens.length === 0) return;
+  const nouvelles = [];
+  data.etapes.forEach((e, i) => {
+    if(e.categorie === 'deplacement'){
+      const precedente = nouvelles[nouvelles.length - 1];
+      const suivante = data.etapes.slice(i + 1).find(x => x.categorie !== 'deplacement');
+      if(precedente && suivante){
+        const key = `${precedente.id}|${suivante.id}`;
+        if(!data.legs[key]) data.legs[key] = {transport: e.notes || e.nom};
+      }
+    } else {
+      nouvelles.push(e);
+    }
+  });
+  data.etapes = nouvelles;
+  logJournal(`Migration : ${anciens.length} étape(s) "Déplacement" converties en notes de trajet entre étapes.`);
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+function logJournal(msg){
+  data.journal.unshift({date: new Date().toISOString(), msg});
+  save();
+}
+
+function meteoTagFor(ville){
+  const r = REGIONS.find(r => r.test.test(ville));
+  return r ? r.tag : null;
+}
+
+function trouverCoords(ville){
+  const key = ville.trim().toLowerCase();
+  if(LIEUX_CONNUS[key]) return LIEUX_CONNUS[key];
+  const match = Object.keys(LIEUX_CONNUS).find(k => key.includes(k) || k.includes(key));
+  return match ? LIEUX_CONNUS[match] : null;
+}
+
+// --- Autocomplétion du champ ville : liste locale instantanée + suggestions live OpenStreetMap ---
+const VILLES_LISTE = Object.keys(LIEUX_CONNUS).map(v => v.replace(/\b\w/g, c => c.toUpperCase()));
+
+function itemsLocaux(q){
+  return VILLES_LISTE.filter(v => v.toLowerCase().includes(q)).slice(0, 6).map(v => ({label: v, source: 'local'}));
+}
+
+function creerAutocompleteVille(inputEl, boxEl, onCoordsChange){
+  let debounceLive = null;
+
+  function afficher(valeur){
+    onCoordsChange(null);
+    const q = valeur.trim().toLowerCase();
+    clearTimeout(debounceLive);
+    if(!q){ boxEl.style.display = 'none'; return; }
+    peindre(itemsLocaux(q));
+    if(q.length >= 3){
+      debounceLive = setTimeout(() => rechercher(valeur.trim(), itemsLocaux(q)), 400);
+    }
+  }
+
+  async function rechercher(q, locaux){
+    try{
+      const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=lk&limit=5&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      if(!res.ok) return;
+      const json = await res.json();
+      const live = json.map(r => ({
+        label: r.display_name.split(',')[0].trim(),
+        source: 'live',
+        lat: parseFloat(r.lat),
+        lon: parseFloat(r.lon),
+      }));
+      const combinees = [...locaux];
+      live.forEach(l => {
+        if(!combinees.some(c => c.label.toLowerCase() === l.label.toLowerCase())) combinees.push(l);
+      });
+      peindre(combinees);
+    }catch(e){
+      // pas de connexion / service indisponible -> on garde les suggestions locales déjà affichées
+    }
+  }
+
+  function peindre(items){
+    if(items.length === 0){ boxEl.style.display = 'none'; return; }
+    boxEl._items = items;
+    boxEl.innerHTML = items.map((it, i) =>
+      `<div data-i="${i}">${it.source === 'live' ? '🌐 ' : ''}${escapeHtml(it.label)}</div>`
+    ).join('') + `<div style="padding:4px 10px;font-size:10px;color:var(--muted);">🌐 = résultat en direct via OpenStreetMap</div>`;
+    boxEl.style.display = 'block';
+  }
+
+  inputEl.addEventListener('input', () => afficher(inputEl.value));
+  inputEl.addEventListener('focus', () => afficher(inputEl.value));
+  boxEl.addEventListener('mousedown', (ev) => {
+    const target = ev.target.closest('[data-i]');
+    if(!target) return;
+    const item = boxEl._items[parseInt(target.dataset.i, 10)];
+    inputEl.value = item.label;
+    onCoordsChange(item.source === 'live' ? {lat: item.lat, lon: item.lon} : null);
+    boxEl.style.display = 'none';
+  });
+  document.addEventListener('click', (ev) => {
+    if(ev.target !== inputEl) boxEl.style.display = 'none';
+  });
+}
+
+let coordsSelection = null;
+let editionCoordsOverride = null;
+
+// --- Statut en direct : le lieu est-il reconnu ? (visible sur la carte + météo saisonnière) ---
+function statutLocalisationHtml(ville, coordsOverride){
+  if(!ville) return '';
+  const coords = coordsOverride ? [coordsOverride.lat, coordsOverride.lon] : trouverCoords(ville);
+  if(!coords){
+    return `<div class="loc-status loc-warn">⚠️ "${escapeHtml(ville)}" non reconnu — n'apparaîtra pas sur la carte, pas de météo saisonnière disponible. Choisis une suggestion dans la liste pour le localiser.</div>`;
+  }
+  const tag = meteoTagFor(ville);
+  return `<div class="loc-status loc-ok">✅ Reconnu — sera visible sur la carte.${tag ? ` 🌦️ ${escapeHtml(tag)}` : ''}</div>`;
+}
+function wireStatutLocalisation(inputVilleEl, statusEl, getCoordsOverride){
+  const majStatut = () => {
+    statusEl.innerHTML = statutLocalisationHtml(inputVilleEl.value.trim(), getCoordsOverride());
+  };
+  inputVilleEl.addEventListener('input', majStatut);
+  inputVilleEl.addEventListener('blur', majStatut);
+  return majStatut;
+}
+const majStatutAjout = wireStatutLocalisation(document.getElementById('f-ville'), document.getElementById('f-status'), () => coordsSelection);
+const majStatutEdition = wireStatutLocalisation(document.getElementById('edit-ville'), document.getElementById('edit-status'), () => editionCoordsOverride);
+
+creerAutocompleteVille(document.getElementById('f-ville'), document.getElementById('f-ville-suggestions'), (c) => { coordsSelection = c; majStatutAjout(); });
+creerAutocompleteVille(document.getElementById('edit-ville'), document.getElementById('edit-ville-suggestions'), (c) => { editionCoordsOverride = c; majStatutEdition(); });
+
+// --- Aperçu (photo + extrait + lien) via Wikipedia, au nom du lieu saisi ---
+function creerApercu(inputNomEl, apercuEl, liensEl){
+  let debounce = null;
+  inputNomEl.addEventListener('input', () => {
+    clearTimeout(debounce);
+    apercuEl.innerHTML = '';
+    const q = inputNomEl.value.trim();
+    if(q.length < 4) return;
+    debounce = setTimeout(() => chercherApercu(q, apercuEl, liensEl), 600);
+  });
+}
+
+async function chercherApercu(nom, apercuEl, liensEl){
+  try{
+    const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(nom + ' Sri Lanka')}&gsrlimit=1&prop=pageimages|extracts|info&inprop=url&pithumbsize=160&exintro=1&explaintext=1&exsentences=2&format=json&origin=*`;
+    const res = await fetch(url);
+    if(!res.ok) return;
+    const json = await res.json();
+    const pages = json && json.query && json.query.pages;
+    if(!pages) return;
+    const page = Object.values(pages)[0];
+    if(!page || !page.extract) return;
+    apercuEl.innerHTML = `
+      <div class="apercu-card">
+        ${page.thumbnail ? `<img src="${page.thumbnail.source}" alt="" />` : ''}
+        <div class="apercu-texte">
+          <strong>${escapeHtml(page.title)}</strong>
+          <p>${escapeHtml(page.extract)}</p>
+          <button type="button" class="btn-link apercu-ajouter-lien">+ ajouter le lien Wikipedia</button>
+        </div>
+      </div>`;
+    apercuEl.querySelector('.apercu-ajouter-lien').addEventListener('click', () => {
+      const existant = liensEl.value.trim();
+      liensEl.value = existant ? existant + '\n' + page.fullurl : page.fullurl;
+      afficherToast('Lien Wikipedia ajouté.');
+    });
+  }catch(e){
+    // pas de connexion / pas de résultat trouvé -> on n'affiche rien, silencieusement
+  }
+}
+creerApercu(document.getElementById('f-nom'), document.getElementById('f-apercu'), document.getElementById('f-liens'));
+creerApercu(document.getElementById('edit-nom'), document.getElementById('edit-apercu'), document.getElementById('edit-liens'));
+
+// --- Carte SVG (projection simple lat/lon -> x/y sur le Sri Lanka) ---
+const BOUNDS = {latMin: 5.85, latMax: 9.9, lonMin: 79.6, lonMax: 82.0};
+function project(lat, lon){
+  const x = ((lon - BOUNDS.lonMin) / (BOUNDS.lonMax - BOUNDS.lonMin)) * 260 + 20;
+  const y = ((BOUNDS.latMax - lat) / (BOUNDS.latMax - BOUNDS.latMin)) * 380 + 15;
+  return {x, y};
+}
+const colorFor = statut => ({
+  brouillon: "#9CA3AF",
+  validation: "#F59E0B",
+  valide: "#16A34A",
+  supprimee: "#DC2626",
+}[statut]);
+
+// silhouette approximative de l'île (schématique, pas géographiquement précise)
+const ISLAND_PATH = "M 140 20 C 170 22 195 45 205 80 C 225 130 245 190 250 250 C 253 300 235 340 210 375 C 195 398 170 410 150 405 C 130 398 115 375 108 345 C 95 300 75 260 65 210 C 55 160 60 110 85 65 C 100 38 118 20 140 20 Z";
+
+let posEtapes = {}; // id étape -> {x, y} tel que dessiné sur la carte (coords du viewBox)
+let modeDessin = false;
+let sequenceDessin = [];
+
+function renderMap(){
+  const svg = document.getElementById('svg-map');
+  const filtreStatut = document.querySelector('#filters button.active').dataset.f;
+  const filtreCategorie = document.querySelector('#filters-categorie button.active').dataset.c;
+  let htmlFond = `<path d="${ISLAND_PATH}" fill="#D8ECE3" stroke="#B7DCCB" stroke-width="2"/>`;
+  let htmlPins = '';
+
+  const visibles = data.etapes.filter(e => {
+    if(e.lat == null) return false;
+    if(filtreCategorie !== 'all' && e.categorie !== filtreCategorie) return false;
+    if(filtreStatut === 'supprimee') return e.statut === 'supprimee';
+    if(e.statut === 'supprimee') return false;
+    return filtreStatut === 'all' ? true : e.statut === filtreStatut;
+  });
+
+  // Regroupe par position ET par thème (un hébergement et un déplacement dans la même ville
+  // restent deux pins distincts au lieu de fondre en un pin générique gris)
+  const POSITIONS_OFFSET = [{dx:-9,dy:-7}, {dx:9,dy:-7}, {dx:-9,dy:7}, {dx:9,dy:7}];
+  const indexTheme = {};
+  data.categories.forEach((c, i) => indexTheme[c.id] = POSITIONS_OFFSET[i % POSITIONS_OFFSET.length]);
+
+  const groupes = {};
+  visibles.forEach(e => {
+    const {x, y} = project(e.lat, e.lon);
+    const base = `${Math.round(x)},${Math.round(y)}`;
+    const key = `${base}|${e.categorie}`;
+    if(!groupes[key]) groupes[key] = {base, x: Math.round(x), y: Math.round(y), categorie: e.categorie, etapes: []};
+    groupes[key].etapes.push(e);
+  });
+
+  posEtapes = {};
+  const labelPose = new Set();
+  Object.values(groupes).forEach(g => {
+    const off = indexTheme[g.categorie] || {dx:0, dy:0};
+    const gx = g.x + off.dx, gy = g.y + off.dy;
+    g.etapes.forEach(e => posEtapes[e.id] = {x: gx, y: gy});
+
+    const statuts = g.etapes.map(e => e.statut);
+    const bordure = statuts.every(s => s === statuts[0]) ? colorFor(statuts[0]) : "#111827";
+    const style = getCategorie(g.categorie);
+    const titre = g.etapes.map(e => `${e.nom} (${getCategorie(e.categorie).label} · ${STATUTS[e.statut].label})`).join(' · ');
+    const ids = g.etapes.map(e => e.id).join(',');
+    const enTrace = modeDessin && g.etapes.some(e => sequenceDessin.includes(e.id));
+    htmlPins += `<g class="pin-group" data-ids="${ids}">
+      <circle cx="${gx}" cy="${gy}" r="7" fill="${style.color}" stroke="${bordure}" stroke-width="2.5" ${enTrace ? 'class="pin-selected"' : ''}><title>${escapeHtml(titre)}</title></circle>
+      <text x="${gx}" y="${gy}" class="pin-icon">${style.emoji}</text>
+    </g>`;
+
+    if(!labelPose.has(g.base)){
+      labelPose.add(g.base);
+      let label = g.etapes.length > 1 ? `${g.etapes[0].ville} (${g.etapes.length})` : g.etapes[0].nom;
+      if(label.length > 22) label = label.slice(0, 21) + '…';
+      const versLaGauche = g.x > 210;
+      const textX = versLaGauche ? g.x - 14 : g.x + 14;
+      const anchor = versLaGauche ? 'end' : 'start';
+      htmlPins += `<text x="${textX}" y="${g.y + 3}" text-anchor="${anchor}" class="pin-label">${escapeHtml(label)}</text>`;
+    }
+  });
+
+  // Tracé du mode dessin : lignes entre les points cliqués, dans l'ordre, avec la durée si connue
+  let htmlTrace = '';
+  if(modeDessin && sequenceDessin.length > 1){
+    for(let i = 0; i < sequenceDessin.length - 1; i++){
+      const a = posEtapes[sequenceDessin[i]];
+      const b = posEtapes[sequenceDessin[i + 1]];
+      if(!a || !b) continue;
+      htmlTrace += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="route-line"/>`;
+      const leg = data.legs[`${sequenceDessin[i]}|${sequenceDessin[i + 1]}`];
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      const labelLeg = leg ? (leg.transport.length > 16 ? leg.transport.slice(0, 15) + '…' : leg.transport) : '+ trajet';
+      htmlTrace += `<text x="${mx}" y="${my}" text-anchor="middle" class="route-label"><title>${escapeHtml(leg ? leg.transport : 'Clique pour définir le trajet')}</title>${escapeHtml(labelLeg)}</text>`;
+    }
+  }
+
+  svg.innerHTML = htmlFond + htmlTrace + htmlPins;
+  svg.querySelectorAll('.pin-group').forEach(g => {
+    g.addEventListener('click', () => onClicPin(g.dataset.ids.split(',')));
+  });
+
+  document.getElementById('map-legend-themes').innerHTML = data.categories.map(c =>
+    `<span>${escapeHtml(c.emoji)} ${escapeHtml(c.label)}</span>`
+  ).join('');
+}
+
+function onClicPin(ids){
+  if(modeDessin){
+    const id = ids[0];
+    if(sequenceDessin.includes(id)) return;
+    const precedent = sequenceDessin[sequenceDessin.length - 1];
+    sequenceDessin.push(id);
+    renderMap();
+    if(precedent) ouvrirLeg(precedent, id);
+  } else {
+    ouvrirDetail(ids[0]);
+  }
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// --- Confirmation et notification maison (window.confirm/alert peuvent être bloqués en iframe) ---
+function confirmerAction(titre, message){
+  return new Promise((resolve) => {
+    document.getElementById('confirm-titre').textContent = titre;
+    document.getElementById('confirm-message').textContent = message;
+    const dlg = document.getElementById('dialog-confirm');
+    const oui = document.getElementById('btn-confirm-oui');
+    const non = document.getElementById('btn-confirm-non');
+    const onOui = () => { dlg.close(); nettoyer(); resolve(true); };
+    const onNon = () => { dlg.close(); nettoyer(); resolve(false); };
+    function nettoyer(){
+      oui.removeEventListener('click', onOui);
+      non.removeEventListener('click', onNon);
+    }
+    oui.addEventListener('click', onOui);
+    non.addEventListener('click', onNon);
+    dlg.showModal();
+  });
+}
+let toastTimer = null;
+function afficherToast(message){
+  const t = document.getElementById('toast');
+  t.textContent = message;
+  t.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('visible'), 3000);
+}
+
+// --- Thèmes personnalisables ---
+function peuplerFiltresThemes(){
+  const cont = document.getElementById('filters-categorie');
+  const actif = cont.querySelector('button.active');
+  const current = actif ? actif.dataset.c : 'all';
+  cont.innerHTML = `<button data-c="all" class="${current === 'all' ? 'active' : ''}">Tous</button>` +
+    data.categories.map(c => `<button data-c="${c.id}" class="${current === c.id ? 'active' : ''}">${escapeHtml(c.emoji)} ${escapeHtml(c.label)}</button>`).join('');
+}
+function peuplerSelectCategorie(){
+  ['f-categorie', 'edit-categorie'].forEach(id => {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const current = sel.value;
+    sel.innerHTML = data.categories.map(c => `<option value="${c.id}">${escapeHtml(c.emoji)} ${escapeHtml(c.label)}</option>`).join('');
+    if(data.categories.some(c => c.id === current)) sel.value = current;
+  });
+}
+function renderThemesDialog(){
+  const el = document.getElementById('themes-liste');
+  el.innerHTML = data.categories.map((c, i) => `
+    <div class="theme-row" data-idx="${i}">
+      <input type="text" class="theme-emoji" value="${escapeHtml(c.emoji)}" style="width:50px;text-align:center;flex:none;" maxlength="4" />
+      <input type="text" class="theme-label" value="${escapeHtml(c.label)}" style="flex:1;" />
+      <button type="button" class="btn-link theme-supprimer" style="color:var(--supprimee);">Supprimer</button>
+    </div>`).join('');
+  el.querySelectorAll('.theme-emoji, .theme-label').forEach(input => {
+    input.addEventListener('change', (ev) => {
+      const idx = parseInt(ev.target.closest('[data-idx]').dataset.idx, 10);
+      const cat = data.categories[idx];
+      if(ev.target.classList.contains('theme-emoji')) cat.emoji = ev.target.value.trim() || '❔';
+      else cat.label = ev.target.value.trim() || cat.id;
+      save();
+      peuplerFiltresThemes();
+      peuplerSelectCategorie();
+      renderAll();
+    });
+  });
+  el.querySelectorAll('.theme-supprimer').forEach(btn => {
+    btn.addEventListener('click', async (ev) => {
+      const idx = parseInt(ev.target.closest('[data-idx]').dataset.idx, 10);
+      const cat = data.categories[idx];
+      const enUsage = data.etapes.filter(e => e.categorie === cat.id).length;
+      const ok = await confirmerAction(
+        'Supprimer ce thème ?',
+        enUsage > 0
+          ? `${enUsage} étape(s) utilisent "${cat.label}" et resteront affichées avec une icône "thème supprimé".`
+          : `Le thème "${cat.label}" sera supprimé.`
+      );
+      if(!ok) return;
+      data.categories.splice(idx, 1);
+      save();
+      renderThemesDialog();
+      peuplerFiltresThemes();
+      peuplerSelectCategorie();
+      renderAll();
+    });
+  });
+}
+document.getElementById('btn-gerer-themes').addEventListener('click', () => {
+  renderThemesDialog();
+  document.getElementById('dialog-themes').showModal();
+});
+document.getElementById('btn-ajouter-theme').addEventListener('click', () => {
+  const emojiEl = document.getElementById('theme-nouvel-emoji');
+  const labelEl = document.getElementById('theme-nouveau-label');
+  const label = labelEl.value.trim();
+  if(!label){ afficherToast('Donne un nom au thème.'); return; }
+  const emoji = emojiEl.value.trim() || '🏷️';
+  const palette = ['#0EA5E9', '#8B5CF6', '#F97316', '#059669', '#DB2777', '#CA8A04', '#64748B'];
+  const id = 'c_' + Date.now().toString(36);
+  data.categories.push({id, emoji, label, color: palette[data.categories.length % palette.length]});
+  emojiEl.value = '';
+  labelEl.value = '';
+  save();
+  renderThemesDialog();
+  peuplerFiltresThemes();
+  peuplerSelectCategorie();
+  renderAll();
+});
+peuplerFiltresThemes();
+peuplerSelectCategorie();
+
+// --- Nettoyage & uniformisation des données (règles automatiques, pas une vraie IA) ---
+function nettoyerEtape(e){
+  let modifie = false;
+
+  const villeTrim = e.ville.trim();
+  if(villeTrim !== e.ville){ e.ville = villeTrim; modifie = true; }
+
+  const liensNettoyes = [...new Set((e.liens || []).map(l => l.trim()).filter(Boolean))];
+  if(JSON.stringify(liensNettoyes) !== JSON.stringify(e.liens || [])){ e.liens = liensNettoyes; modifie = true; }
+
+  const notesAvant = (e.notes || '').trim();
+  const nomTrim = e.nom.trim();
+  if(nomTrim.length > 60){
+    const zoneCoupure = nomTrim.slice(0, 60);
+    const dernierEspace = zoneCoupure.lastIndexOf(' ');
+    const limite = dernierEspace > 30 ? dernierEspace : 60;
+    const titreCourt = nomTrim.slice(0, limite).trim();
+    const reste = nomTrim.slice(limite).trim().replace(/^[,;:—-]\s*/, '');
+    if(reste){
+      e.nom = titreCourt;
+      e.notes = reste + (notesAvant ? ' — ' + notesAvant : '');
+      modifie = true;
+    }
+  } else if(nomTrim !== e.nom){
+    e.nom = nomTrim;
+    modifie = true;
+  }
+
+  if((e.notes || '').trim() !== e.notes){ e.notes = (e.notes || '').trim(); modifie = true; }
+
+  return modifie;
+}
+document.getElementById('btn-nettoyer').addEventListener('click', () => {
+  let compte = 0;
+  data.etapes.forEach(e => {
+    if(nettoyerEtape(e)){
+      compte++;
+      e.historique.push({date: new Date().toISOString(), statut: e.statut, note: 'Nettoyage automatique (titre/liens/notes uniformisés).'});
+    }
+  });
+  if(compte === 0){
+    afficherToast('Rien à nettoyer, tes données sont déjà propres.');
+    return;
+  }
+  logJournal(`Nettoyage automatique : ${compte} étape(s) uniformisée(s) (titres, liens, notes).`);
+  save();
+  renderAll();
+  afficherToast(`${compte} étape(s) nettoyée(s) et uniformisée(s).`);
+});
+
+// --- Formulaire d'ajout ---
+function creerEtape({nom, ville, categorie, dates, liens, notes, statut, coordsOverride}){
+  const coords = coordsOverride ? [coordsOverride.lat, coordsOverride.lon] : trouverCoords(ville);
+  return {
+    id: crypto.randomUUID(),
+    nom, ville, categorie, dates: dates || "", liens: liens || [], notes,
+    statut: statut || "brouillon",
+    lat: coords ? coords[0] : null,
+    lon: coords ? coords[1] : null,
+    dateAjout: new Date().toISOString(),
+    historique: [{date: new Date().toISOString(), statut: statut || "brouillon", note: "Création"}],
+  };
+}
+
+document.getElementById('form-etape').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const nom = document.getElementById('f-nom').value.trim();
+  const ville = document.getElementById('f-ville').value.trim();
+  const categorie = document.getElementById('f-categorie').value;
+  const dates = document.getElementById('f-dates').value.trim();
+  const liens = document.getElementById('f-liens').value.split('\n').map(s => s.trim()).filter(Boolean);
+  const notes = document.getElementById('f-notes').value.trim();
+
+  const etape = creerEtape({nom, ville, categorie, dates, liens, notes, coordsOverride: coordsSelection});
+  coordsSelection = null;
+  data.etapes.push(etape);
+  logJournal(`Ajout de "${nom}" (${getCategorie(categorie).label}) en brouillon.`);
+  save();
+
+  ev.target.reset();
+  document.getElementById('f-categorie').value = categorie;
+  document.getElementById('f-apercu').innerHTML = '';
+  majStatutAjout();
+  renderAll();
+});
+
+// --- Filtres ---
+document.getElementById('filters').addEventListener('click', (ev) => {
+  if(ev.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('#filters button').forEach(b => b.classList.remove('active'));
+  ev.target.classList.add('active');
+  renderAll();
+});
+document.getElementById('filters-categorie').addEventListener('click', (ev) => {
+  if(ev.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('#filters-categorie button').forEach(b => b.classList.remove('active'));
+  ev.target.classList.add('active');
+  renderAll();
+});
+
+// --- Liste des étapes ---
+function renderListe(){
+  const filtreStatut = document.querySelector('#filters button.active').dataset.f;
+  const filtreCategorie = document.querySelector('#filters-categorie button.active').dataset.c;
+  const el = document.getElementById('liste-etapes');
+  const visibles = data.etapes.filter(e => {
+    if(filtreCategorie !== 'all' && e.categorie !== filtreCategorie) return false;
+    if(filtreStatut === 'supprimee') return e.statut === 'supprimee';
+    if(e.statut === 'supprimee') return false;
+    return filtreStatut === 'all' ? true : e.statut === filtreStatut;
+  });
+
+  if(visibles.length === 0){
+    el.innerHTML = `<div class="empty">Aucune étape pour ce filtre.</div>`;
+    return;
+  }
+
+  const afficherTrajets = filtreStatut === 'all' && filtreCategorie === 'all';
+
+  el.innerHTML = visibles.map((e, i) => {
+    const tag = meteoTagFor(e.ville);
+    const liens = e.liens || [];
+    const cat = getCategorie(e.categorie);
+    const etapeHtml = `
+    <div class="etape-swipe" data-id="${e.id}">
+      <div class="etape-edit-bg">✏️ Modifier</div>
+      <div class="etape-delete-bg">🗑️ Supprimer</div>
+      <div class="etape statut-${e.statut}">
+        <div class="etape-top">
+          <div>
+            <strong>${escapeHtml(e.nom)}</strong>
+            <div class="etape-meta">${escapeHtml(e.ville)} · ${cat.emoji} ${escapeHtml(cat.label)}${e.dates ? ` · ${escapeHtml(e.dates)}` : ""}</div>
+          </div>
+          <span class="badge badge-${e.statut}">${STATUTS[e.statut].label}</span>
+        </div>
+        ${e.notes ? `<div class="etape-meta">${escapeHtml(e.notes)}</div>` : ""}
+        ${tag ? `<span class="meteo-tag">🌦️ ${tag}</span>` : ""}
+        ${e.lat == null ? `<span class="no-position">📍 Pas sur la carte (ville non reconnue)</span>` : ""}
+        ${liens.length ? `<div class="liens-chips">${liens.map((l, i) => `<a class="lien-chip" href="${escapeHtml(l)}" target="_blank" rel="noopener">🔗 lien ${i+1}</a>`).join('')}</div>` : ""}
+        <div class="etape-actions">
+          <select class="select-statut">
+            ${Object.keys(STATUTS).map(s => `<option value="${s}" ${s===e.statut?'selected':''}>${STATUTS[s].label}</option>`).join('')}
+          </select>
+          <button class="btn-link btn-historique">Historique (${e.historique.length})</button>
+        </div>
+      </div>
+    </div>`;
+
+    let legHtml = '';
+    if(afficherTrajets && i < visibles.length - 1){
+      const suivante = visibles[i + 1];
+      const leg = data.legs[`${e.id}|${suivante.id}`];
+      legHtml = `
+      <div class="leg-row" data-from="${e.id}" data-to="${suivante.id}">
+        <span class="leg-icon">↓</span>
+        <span>${leg ? escapeHtml(leg.transport) : "+ ajouter le moyen de transport"}</span>
+      </div>`;
+    }
+    return etapeHtml + legHtml;
+  }).join('');
+
+  el.querySelectorAll('.select-statut').forEach(sel => {
+    sel.addEventListener('change', (ev) => {
+      const id = ev.target.closest('.etape-swipe').dataset.id;
+      changerStatut(id, ev.target.value);
+    });
+  });
+  el.querySelectorAll('.btn-historique').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      const id = ev.target.closest('.etape-swipe').dataset.id;
+      afficherHistorique(id);
+    });
+  });
+  el.querySelectorAll('.etape-swipe').forEach(wireSwipe);
+  el.querySelectorAll('.leg-row').forEach(row => {
+    row.addEventListener('click', () => ouvrirLeg(row.dataset.from, row.dataset.to));
+  });
+}
+
+// --- Glisser vers la gauche pour supprimer (mobile) ---
+function wireSwipe(wrap){
+  const front = wrap.querySelector('.etape');
+  const editBg = wrap.querySelector('.etape-edit-bg');
+  const deleteBg = wrap.querySelector('.etape-delete-bg');
+  const SEUIL = 70;
+  let startX = null, dx = 0, active = false;
+
+  const onDown = (x) => { startX = x; dx = 0; active = true; front.style.transition = 'none'; };
+  const onMove = (x) => {
+    if(!active) return;
+    dx = Math.max(-120, Math.min(120, x - startX));
+    front.style.transform = `translateX(${dx}px)`;
+    editBg.style.opacity = dx > 10 ? '1' : '0';
+    deleteBg.style.opacity = dx < -10 ? '1' : '0';
+  };
+  const onUp = (ev) => {
+    if(!active) return;
+    active = false;
+    front.style.transition = 'transform 0.18s ease';
+    if(dx < -SEUIL){
+      front.style.transform = 'translateX(-100%)';
+      const id = wrap.dataset.id;
+      setTimeout(() => supprimerEtape(id), 160);
+    } else if(dx > SEUIL){
+      front.style.transform = 'translateX(0)';
+      editBg.style.opacity = '0';
+      ouvrirEdition(wrap.dataset.id);
+    } else {
+      front.style.transform = 'translateX(0)';
+      editBg.style.opacity = '0';
+      deleteBg.style.opacity = '0';
+      const cible = ev && ev.target;
+      if(Math.abs(dx) < 8 && (!cible || !cible.closest('select, button, a, input, textarea'))){
+        ouvrirDetail(wrap.dataset.id);
+      }
+    }
+  };
+
+  front.addEventListener('touchstart', (ev) => onDown(ev.touches[0].clientX), {passive:true});
+  front.addEventListener('touchmove', (ev) => onMove(ev.touches[0].clientX), {passive:true});
+  front.addEventListener('touchend', onUp);
+
+  front.addEventListener('pointerdown', (ev) => {
+    if(ev.pointerType === 'touch') return; // déjà géré par touchstart
+    onDown(ev.clientX);
+    front.setPointerCapture(ev.pointerId);
+  });
+  front.addEventListener('pointermove', (ev) => { if(ev.pointerType !== 'touch') onMove(ev.clientX); });
+  front.addEventListener('pointerup', (ev) => { if(ev.pointerType !== 'touch') onUp(ev); });
+}
+
+function supprimerEtape(id){
+  changerStatut(id, 'supprimee');
+}
+
+// --- Édition complète d'une étape (ouverte par swipe droite ou programmatiquement) ---
+let editionId = null;
+function ouvrirEdition(id){
+  const e = data.etapes.find(x => x.id === id);
+  if(!e) return;
+  editionId = id;
+  editionCoordsOverride = null;
+  document.getElementById('edit-nom').value = e.nom;
+  document.getElementById('edit-apercu').innerHTML = '';
+  document.getElementById('edit-ville').value = e.ville;
+  document.getElementById('edit-dates').value = e.dates || '';
+  document.getElementById('edit-liens').value = (e.liens || []).join('\n');
+  document.getElementById('edit-notes').value = e.notes || '';
+  majStatutEdition();
+  peuplerSelectCategorie();
+  document.getElementById('edit-categorie').value = e.categorie;
+  document.getElementById('dialog-edition').showModal();
+}
+document.getElementById('btn-edition-annuler').addEventListener('click', () => document.getElementById('dialog-edition').close());
+document.getElementById('form-edition').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const e = data.etapes.find(x => x.id === editionId);
+  if(!e) return;
+  e.nom = document.getElementById('edit-nom').value.trim();
+  e.ville = document.getElementById('edit-ville').value.trim();
+  e.dates = document.getElementById('edit-dates').value.trim();
+  e.categorie = document.getElementById('edit-categorie').value;
+  e.liens = document.getElementById('edit-liens').value.split('\n').map(s => s.trim()).filter(Boolean);
+  e.notes = document.getElementById('edit-notes').value.trim();
+  const coords = editionCoordsOverride ? [editionCoordsOverride.lat, editionCoordsOverride.lon] : trouverCoords(e.ville);
+  e.lat = coords ? coords[0] : null;
+  e.lon = coords ? coords[1] : null;
+  e.historique.push({date: new Date().toISOString(), statut: e.statut, note: 'Modifié'});
+  logJournal(`"${e.nom}" modifié.`);
+  save();
+  document.getElementById('dialog-edition').close();
+  renderAll();
+});
+
+// --- Trajet manuel entre deux étapes consécutives ---
+let legCourante = null;
+function ouvrirLeg(fromId, toId){
+  const fromE = data.etapes.find(x => x.id === fromId);
+  const toE = data.etapes.find(x => x.id === toId);
+  if(!fromE || !toE) return;
+  legCourante = {fromId, toId};
+  document.getElementById('leg-titre').textContent = `Trajet : ${fromE.nom} → ${toE.nom}`;
+  const leg = data.legs[`${fromId}|${toId}`];
+  document.getElementById('leg-transport').value = leg ? leg.transport : '';
+  document.getElementById('dialog-leg').showModal();
+}
+document.getElementById('btn-leg-annuler').addEventListener('click', () => document.getElementById('dialog-leg').close());
+document.getElementById('btn-leg-enregistrer').addEventListener('click', () => {
+  const key = `${legCourante.fromId}|${legCourante.toId}`;
+  const val = document.getElementById('leg-transport').value.trim();
+  if(val) data.legs[key] = {transport: val};
+  else delete data.legs[key];
+  save();
+  document.getElementById('dialog-leg').close();
+  renderAll();
+});
+
+function changerStatut(id, nouveauStatut){
+  const e = data.etapes.find(e => e.id === id);
+  if(!e || e.statut === nouveauStatut) return;
+  const ancien = e.statut;
+  e.statut = nouveauStatut;
+  e.historique.push({date: new Date().toISOString(), statut: nouveauStatut, note: `Passage de "${STATUTS[ancien].label}" à "${STATUTS[nouveauStatut].label}"`});
+  logJournal(`"${e.nom}" : ${STATUTS[ancien].label} → ${STATUTS[nouveauStatut].label}.`);
+  save();
+  renderAll();
+}
+
+function afficherHistorique(id){
+  const e = data.etapes.find(e => e.id === id);
+  if(!e) return;
+  document.getElementById('hist-titre').textContent = `Historique — ${e.nom}`;
+  document.getElementById('hist-content').innerHTML = `<ul class="history-list">${
+    e.historique.slice().reverse().map(h => `<li>${new Date(h.date).toLocaleString('fr-FR')} — ${escapeHtml(h.note)}</li>`).join('')
+  }</ul>`;
+  document.getElementById('dialog-historique').showModal();
+}
+
+// --- Détail d'une étape (clic sur un item de la liste ou un pin de la carte) ---
+function ouvrirDetail(id){
+  const e = data.etapes.find(x => x.id === id);
+  if(!e) return;
+  const cat = getCategorie(e.categorie);
+  document.getElementById('detail-titre').textContent = e.nom;
+  document.getElementById('detail-meta').textContent =
+    `${e.ville} · ${cat.emoji} ${cat.label}${e.dates ? ' · ' + e.dates : ''} · ${STATUTS[e.statut].label}`;
+  const tag = meteoTagFor(e.ville);
+  document.getElementById('detail-meteo').innerHTML = tag ? `<span class="meteo-tag">🌦️ ${escapeHtml(tag)}</span>` : '';
+  document.getElementById('detail-notes').textContent = e.notes || '(pas de notes)';
+  const liensEl = document.getElementById('detail-liens');
+  const liens = e.liens || [];
+  if(liens.length === 0){
+    liensEl.innerHTML = `<div class="empty">Aucun lien enregistré.</div>`;
+  } else {
+    liensEl.innerHTML = liens.map((l, i) => `<div data-idx="${i}"></div>`).join('');
+    liens.forEach((l, i) => chargerApercuLien(l, liensEl.querySelector(`[data-idx="${i}"]`)));
+  }
+  document.getElementById('dialog-detail').showModal();
+}
+document.getElementById('btn-detail-fermer').addEventListener('click', () => document.getElementById('dialog-detail').close());
+
+async function chargerApercuLien(url, containerEl){
+  let domaine;
+  try{ domaine = new URL(url).hostname.replace(/^www\./, ''); }catch(e){ domaine = url; }
+  const favicon = `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(domaine)}`;
+
+  if(/\.(jpe?g|png|gif|webp)(\?|$)/i.test(url)){
+    containerEl.innerHTML = `
+      <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="apercu-lien-card apercu-lien-image">
+        <img src="${escapeHtml(url)}" alt="" />
+        <span><strong>${escapeHtml(domaine)}</strong><span class="apercu-lien-extrait">Image</span></span>
+      </a>`;
+    return;
+  }
+
+  containerEl.innerHTML = `
+    <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="apercu-lien-card">
+      <img src="${favicon}" alt="" />
+      <span><strong>${escapeHtml(domaine)}</strong><span class="apercu-lien-extrait">Ouvrir le lien</span></span>
+    </a>`;
+
+  const wikiMatch = url.match(/wikipedia\.org\/wiki\/([^?#]+)/);
+  if(wikiMatch){
+    try{
+      const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${wikiMatch[1]}`);
+      if(res.ok){
+        const j = await res.json();
+        containerEl.innerHTML = `
+          <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="apercu-lien-card">
+            ${j.thumbnail ? `<img src="${escapeHtml(j.thumbnail.source)}" alt="" />` : `<img src="${favicon}" alt="" />`}
+            <span><strong>${escapeHtml(j.title || domaine)}</strong><span class="apercu-lien-extrait">${escapeHtml((j.extract || '').slice(0, 110))}</span></span>
+          </a>`;
+      }
+    }catch(e){
+      // pas de connexion / page introuvable -> on garde la carte générique déjà affichée
+    }
+  }
+}
+
+// --- Journal global ---
+function renderJournal(){
+  const el = document.getElementById('journal');
+  if(data.journal.length === 0){
+    el.innerHTML = `<div class="empty">Rien pour l'instant.</div>`;
+    return;
+  }
+  el.innerHTML = data.journal.map(j => `<div class="journal-entry">${new Date(j.date).toLocaleString('fr-FR')} — ${escapeHtml(j.msg)}</div>`).join('');
+}
+document.getElementById('toggle-journal').addEventListener('click', (ev) => {
+  ev.preventDefault();
+  const j = document.getElementById('journal');
+  j.style.display = j.style.display === 'none' ? 'block' : 'none';
+});
+
+function renderAll(){
+  renderListe();
+  renderMap();
+  renderJournal();
+}
+
+// --- Itinéraire type (voyage de noces 16 août - 6 sept) ---
+const ITINERAIRE_MARIAGE = [
+  {nom:"Colombo — arrivée", ville:"Colombo", categorie:"hebergement", dates:"16-17 août",
+   notes:"Temps en famille. Maniumpathy Hotel ou Uga Residence (100-180€/nuit). À voir si temps libre : Galle Face Green (coucher de soleil), Gangaramaya Temple, Cinnamon Gardens."},
+  {nom:"Colombo → Jaffna", ville:"Colombo", categorie:"deplacement", dates:"18 août",
+   notes:"Train Yal Devi (~6h30, panoramique, à réserver à l'avance) ou vol direct CMB-JAF (1h)."},
+  {nom:"Jaffna", ville:"Jaffna", categorie:"hebergement", dates:"18-19 août",
+   notes:"Jaffna Heritage Hotel ou Fox Jaffna (60-100€/nuit). Nallur Kandaswamy Kovil, Fort hollandais, îles de Jaffna (Delft/Nainativu en bonus), Pandateruppu, Madhagal. Région la plus authentique — peu d'infinity pools ici."},
+  {nom:"Jaffna → Trincomalee", ville:"Jaffna", categorie:"deplacement", dates:"20 août",
+   notes:"Route privée, ~4h."},
+  {nom:"Trincomalee / Nilaveli", ville:"Trincomalee", categorie:"hebergement", dates:"20-22 août",
+   notes:"Jungle Beach by Uga ou Anantaya Resort & Spa Chena Huts (120-250€/nuit). Plages Nilaveli/Uppuveli, snorkeling Pigeon Island, observation des baleines, dîner/feu de camp sur la plage à Uppuveli."},
+  {nom:"Trincomalee → Passekudah", ville:"Trincomalee", categorie:"deplacement", dates:"23 août",
+   notes:"Route, ~2h."},
+  {nom:"Passekudah / Kalkudah", ville:"Passekudah", categorie:"hebergement", dates:"23-24 août",
+   notes:"Anilana Passikudah ou Maalu Maalu Resort (130-220€/nuit). Lagon calme idéal baignade, farniente, sports nautiques légers."},
+  {nom:"Passekudah → Sigiriya", ville:"Passekudah", categorie:"deplacement", dates:"25 août",
+   notes:"Route, ~3h."},
+  {nom:"Triangle Culturel — Sigiriya", ville:"Sigiriya", categorie:"hebergement", dates:"25-26 août",
+   notes:"Water Garden Sigiriya ou Heritance Kandalama (150-300€/nuit). Rocher du Lion au lever du soleil, grottes de Dambulla, Polonnaruwa à vélo, safari Minneriya/Kaudulla (rassemblement d'éléphants en août)."},
+  {nom:"Sigiriya → homestay (Kandy/Matale)", ville:"Sigiriya", categorie:"deplacement", dates:"27 août",
+   notes:"Route, ~1h30-2h."},
+  {nom:"Nuit chez l'habitant — région Kandy/Matale", ville:"Matale", categorie:"hebergement", dates:"27 août",
+   notes:"Homestay familial (rizières, repas préparé avec la famille) — à réserver via Airbnb Experiences ou guesthouse rurale."},
+  {nom:"Kandy", ville:"Kandy", categorie:"hebergement", dates:"28-29 août",
+   notes:"Aarunya Nature Resort (piscine infinity dans les rizières) ou Thilanka Hotel (infinity pool sur la ville), 100-200€/nuit. Temple de la Dent de Bouddha, jardins botaniques de Peradeniya, éventuellement fin de l'Esala Perahera (vérifier dates 2026)."},
+  {nom:"Kandy → Ella (train scénique)", ville:"Kandy", categorie:"deplacement", dates:"30 août",
+   notes:"Train Kandy-Ella, l'un des plus beaux trajets ferroviaires au monde (~6-7h) — réserver la 1ère classe/observation plusieurs mois à l'avance."},
+  {nom:"Ella — Hill Country", ville:"Ella", categorie:"hebergement", dates:"30 août - 1 sept",
+   notes:"98 Acres Resort & Spa (vue sur les vallées de thé, piscine à débordement), 130-220€/nuit. Nine Arch Bridge, Little Adam's Peak, cascades Ravana Falls et Diyaluma Falls (baignade possible), dégustation de thé."},
+  {nom:"Ella → Côte Sud", ville:"Ella", categorie:"deplacement", dates:"2 sept",
+   notes:"Route, ~4h (détour safari Udawalawe possible en option)."},
+  {nom:"Côte Sud — Mirissa / Weligama / Tangalle", ville:"Mirissa", categorie:"hebergement", dates:"2-4 sept",
+   notes:"Cape Weligama (suites piscine infinity privée face à l'océan) ou Tri Villa (bord du lac Koggala), 200-400€/nuit. Surf à Weligama, observation des baleines à Mirissa, beach clubs, dîner privé sur la plage à Weligama/Tangalle."},
+  {nom:"Côte Sud → Galle", ville:"Mirissa", categorie:"deplacement", dates:"5 sept",
+   notes:"Route, 30-45 min."},
+  {nom:"Galle", ville:"Galle", categorie:"hebergement", dates:"5 sept",
+   notes:"Galle Fort Hotel (villa hollandaise XVIIIe, piscine, dans le fort), 150-250€/nuit. Remparts du Fort de Galle (UNESCO), ruelles coloniales, boutiques de designers locaux, coucher de soleil sur les remparts."},
+  {nom:"Galle → Colombo — retour", ville:"Colombo", categorie:"deplacement", dates:"6 sept",
+   notes:"Route ou train, 2-2h30. Retour en famille, vol retour selon horaire."},
+];
+
+// --- Réordonner géographiquement (plus proche voisin, approximatif) ---
+function reordonnerGeographiquement(){
+  const avecCoord = data.etapes.filter(e => e.lat != null && e.statut !== 'supprimee');
+  const reste = data.etapes.filter(e => e.lat == null || e.statut === 'supprimee');
+  if(avecCoord.length < 3) return;
+
+  const restant = [...avecCoord];
+  const ordre = [restant.shift()];
+  while(restant.length){
+    const dernier = ordre[ordre.length - 1];
+    let idxPlusProche = 0, distMin = Infinity;
+    restant.forEach((e, i) => {
+      const d = Math.hypot(e.lat - dernier.lat, e.lon - dernier.lon);
+      if(d < distMin){ distMin = d; idxPlusProche = i; }
+    });
+    ordre.push(restant.splice(idxPlusProche, 1)[0]);
+  }
+  data.etapes = [...ordre, ...reste];
+  logJournal(`Itinéraire réordonné géographiquement (${ordre.length} étapes, algorithme plus-proche-voisin).`);
+  save();
+  renderAll();
+}
+document.getElementById('btn-reordonner').addEventListener('click', () => {
+  const eligibles = data.etapes.filter(e => e.lat != null && e.statut !== 'supprimee').length;
+  if(eligibles < 3){
+    afficherToast("Il faut au moins 3 étapes localisées sur la carte pour réordonner.");
+    return;
+  }
+  reordonnerGeographiquement();
+  afficherToast("Itinéraire réordonné géographiquement.");
+});
+
+// --- Import depuis un texte collé : reconnaissance par mots-clés (pas une vraie IA), avec pré-liste et dédoublonnage ---
+function parserTexteItineraire(texte){
+  const lignes = texte.split(/\n+/).map(l => l.trim()).filter(Boolean);
+  const motsHebergement = /h[ôo]tel|resort|villa|guesthouse|homestay|h[ée]bergement|auberge/i;
+  const motsResto = /restaurant|d[îi]ner|d[ée]jeuner|caf[ée]|resto/i;
+  const regexDate = /\b\d{1,2}(?:\s?-\s?\d{1,2})?\s?(?:août|aout|septembre|sept)\.?\b/i;
+  const idHebergement = data.categories.find(c => c.id === 'hebergement') ? 'hebergement' : null;
+  const idResto = data.categories.find(c => c.id === 'resto') ? 'resto' : null;
+  const idParDefaut = (data.categories.find(c => c.id === 'activite') || data.categories[0] || {}).id || null;
+
+  const candidats = [];
+  lignes.forEach(ligne => {
+    const nettoyee = ligne.replace(/^[-•*\d.)\s]+/, '').trim();
+    if(nettoyee.length < 3) return;
+    const villeTrouvee = Object.keys(LIEUX_CONNUS).find(k => nettoyee.toLowerCase().includes(k));
+    if(!villeTrouvee) return; // on ignore les lignes où aucun lieu du Sri Lanka n'est reconnu
+    const ville = villeTrouvee.replace(/\b\w/g, c => c.toUpperCase());
+    const dateMatch = nettoyee.match(regexDate);
+    let categorie = idParDefaut;
+    if(idHebergement && motsHebergement.test(nettoyee)) categorie = idHebergement;
+    else if(idResto && motsResto.test(nettoyee)) categorie = idResto;
+    candidats.push({
+      nom: nettoyee.length > 70 ? nettoyee.slice(0, 68) + '…' : nettoyee,
+      ville,
+      dates: dateMatch ? dateMatch[0] : '',
+      categorie,
+    });
+  });
+
+  const vus = new Set();
+  const uniques = candidats.filter(c => {
+    const key = (c.nom + '|' + c.ville).toLowerCase();
+    if(vus.has(key)) return false;
+    vus.add(key);
+    return true;
+  });
+
+  return uniques.map(c => {
+    const dejaPresent = data.etapes.some(e =>
+      e.ville.toLowerCase() === c.ville.toLowerCase() &&
+      (e.nom.toLowerCase().includes(c.nom.toLowerCase().slice(0, 15)) || c.nom.toLowerCase().includes(e.nom.toLowerCase().slice(0, 15)))
+    );
+    return {...c, dejaPresent};
+  });
+}
+
+let previewCourant = [];
+document.getElementById('btn-importer-texte').addEventListener('click', () => {
+  document.getElementById('import-texte-source').value = '';
+  document.getElementById('import-preview').innerHTML = '';
+  document.getElementById('btn-import-ajouter').style.display = 'none';
+  previewCourant = [];
+  document.getElementById('dialog-import-texte').showModal();
+});
+document.getElementById('btn-import-fermer').addEventListener('click', () => document.getElementById('dialog-import-texte').close());
+
+document.getElementById('btn-analyser-texte').addEventListener('click', () => {
+  const texte = document.getElementById('import-texte-source').value;
+  previewCourant = parserTexteItineraire(texte);
+  const el = document.getElementById('import-preview');
+  if(previewCourant.length === 0){
+    el.innerHTML = `<div class="empty">Aucun lieu du Sri Lanka reconnu dans ce texte. Essaie avec des noms de villes explicites (Colombo, Kandy, Ella...).</div>`;
+    document.getElementById('btn-import-ajouter').style.display = 'none';
+    return;
+  }
+  el.innerHTML = `<div class="filters-label">Pré-liste (${previewCourant.length} lieu(x) détecté(s)) — décoche ce que tu ne veux pas ajouter</div>` +
+    previewCourant.map((c, i) => `
+      <label class="preview-item" style="${c.dejaPresent ? 'opacity:0.5;' : ''}">
+        <input type="checkbox" class="preview-check" data-idx="${i}" ${c.dejaPresent ? '' : 'checked'} />
+        <span>
+          <strong>${escapeHtml(c.nom)}</strong><br/>
+          ${escapeHtml(c.ville)}${c.dates ? ' · ' + escapeHtml(c.dates) : ''} · ${escapeHtml(getCategorie(c.categorie).emoji)} ${escapeHtml(getCategorie(c.categorie).label)}
+          ${c.dejaPresent ? '<br/><em>déjà dans ta liste</em>' : ''}
+        </span>
+      </label>`).join('');
+  document.getElementById('btn-import-ajouter').style.display = 'block';
+});
+
+document.getElementById('btn-import-ajouter').addEventListener('click', () => {
+  const coches = Array.from(document.querySelectorAll('.preview-check:checked')).map(cb => previewCourant[parseInt(cb.dataset.idx, 10)]);
+  if(coches.length === 0){ afficherToast('Aucun lieu coché.'); return; }
+  coches.forEach(c => {
+    data.etapes.push(creerEtape({nom: c.nom, ville: c.ville, categorie: c.categorie, dates: c.dates, liens: [], notes: ''}));
+  });
+  logJournal(`Import texte : ${coches.length} lieu(x) ajouté(s).`);
+  save();
+  document.getElementById('dialog-import-texte').close();
+  renderAll();
+  afficherToast(`${coches.length} lieu(x) ajouté(s) à l'itinéraire.`);
+});
+
+document.getElementById('btn-seed').addEventListener('click', async () => {
+  const ok = await confirmerAction(
+    "Charger l'itinéraire type ?",
+    `${ITINERAIRE_MARIAGE.length} étapes seront ajoutées en brouillon, en plus de celles déjà présentes.`
+  );
+  if(!ok) return;
+  ITINERAIRE_MARIAGE.forEach(item => {
+    data.etapes.push(creerEtape(item));
+  });
+  migrerAnciensDeplacements();
+  logJournal(`Import de l'itinéraire type du voyage de noces.`);
+  save();
+  renderAll();
+});
+
+// --- Partage (snapshot encodé dans l'URL, pas de synchro live) ---
+function b64EncodeUnicode(str){
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p) => String.fromCharCode('0x' + p)));
+}
+function b64DecodeUnicode(str){
+  return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+}
+
+document.getElementById('btn-partager').addEventListener('click', () => {
+  const payload = {etapes: data.etapes.filter(e => e.statut !== 'supprimee')};
+  const encoded = b64EncodeUnicode(JSON.stringify(payload));
+  const url = `${location.origin}${location.pathname}#partage=${encoded}`;
+  document.getElementById('partage-url').value = url;
+  document.getElementById('dialog-partage').showModal();
+});
+document.getElementById('btn-copier-lien').addEventListener('click', async () => {
+  const url = document.getElementById('partage-url').value;
+  try{
+    await navigator.clipboard.writeText(url);
+    document.getElementById('btn-copier-lien').textContent = "Copié !";
+    setTimeout(() => document.getElementById('btn-copier-lien').textContent = "Copier le lien", 1500);
+  }catch(e){
+    document.getElementById('partage-url').select();
+  }
+});
+
+// --- Réception d'un lien partagé ---
+function verifierLienPartage(){
+  const hash = location.hash;
+  if(!hash.startsWith('#partage=')) return;
+  let payload;
+  try{
+    payload = JSON.parse(b64DecodeUnicode(hash.slice('#partage='.length)));
+  }catch(e){
+    history.replaceState(null, '', location.pathname);
+    return;
+  }
+  const n = (payload.etapes || []).length;
+  document.getElementById('import-partage-detail').textContent = `Cet ami te partage ${n} lieu(x) de son itinéraire.`;
+  document.getElementById('dialog-import-partage').showModal();
+
+  document.getElementById('btn-importer-partage').onclick = () => {
+    (payload.etapes || []).forEach(e => {
+      const clone = creerEtape({
+        nom: e.nom, ville: e.ville, categorie: e.categorie, dates: e.dates,
+        liens: e.liens || [], notes: e.notes, statut: "brouillon",
+      });
+      data.etapes.push(clone);
+    });
+    logJournal(`Import d'un itinéraire partagé (${n} lieux).`);
+    save();
+    history.replaceState(null, '', location.pathname);
+    document.getElementById('dialog-import-partage').close();
+    renderAll();
+  };
+  document.getElementById('btn-ignorer-partage').onclick = () => {
+    history.replaceState(null, '', location.pathname);
+    document.getElementById('dialog-import-partage').close();
+  };
+}
+
+// --- Onglets mobile (Liste / Carte) ---
+document.body.classList.add('vue-liste');
+document.getElementById('tab-liste').addEventListener('click', () => {
+  document.body.classList.add('vue-liste');
+  document.body.classList.remove('vue-carte');
+  document.getElementById('tab-liste').classList.add('active');
+  document.getElementById('tab-carte').classList.remove('active');
+});
+document.getElementById('tab-carte').addEventListener('click', () => {
+  document.body.classList.add('vue-carte');
+  document.body.classList.remove('vue-liste');
+  document.getElementById('tab-carte').classList.add('active');
+  document.getElementById('tab-liste').classList.remove('active');
+  renderMap();
+});
+
+// --- Zoom / déplacement sur la carte ---
+let mapZoom = 1, mapPanX = 0, mapPanY = 0;
+function appliquerTransformCarte(){
+  document.getElementById('svg-map').style.transform = `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoom})`;
+}
+document.getElementById('btn-zoom-in').addEventListener('click', () => { mapZoom = Math.min(4, mapZoom * 1.3); appliquerTransformCarte(); });
+document.getElementById('btn-zoom-out').addEventListener('click', () => { mapZoom = Math.max(1, mapZoom / 1.3); appliquerTransformCarte(); });
+document.getElementById('btn-zoom-reset').addEventListener('click', () => { mapZoom = 1; mapPanX = 0; mapPanY = 0; appliquerTransformCarte(); });
+
+const mapWrap = document.getElementById('map-zoom-wrap');
+const mapSvgEl = document.getElementById('svg-map');
+mapWrap.addEventListener('wheel', (ev) => {
+  ev.preventDefault();
+  mapZoom = Math.max(1, Math.min(4, mapZoom * (ev.deltaY < 0 ? 1.12 : 0.9)));
+  appliquerTransformCarte();
+}, {passive: false});
+
+let panActive = false, panStartX = 0, panStartY = 0, panOrigX = 0, panOrigY = 0, panDist = 0;
+mapWrap.addEventListener('pointerdown', (ev) => {
+  if(ev.target.closest('.pin-group')) return; // laisse le clic sur un pin arriver normalement
+  panActive = true; panDist = 0;
+  panStartX = ev.clientX; panStartY = ev.clientY;
+  panOrigX = mapPanX; panOrigY = mapPanY;
+  mapSvgEl.classList.add('dragging');
+  mapWrap.setPointerCapture(ev.pointerId);
+});
+mapWrap.addEventListener('pointermove', (ev) => {
+  if(!panActive) return;
+  const dx = ev.clientX - panStartX, dy = ev.clientY - panStartY;
+  panDist = Math.max(panDist, Math.abs(dx) + Math.abs(dy));
+  mapPanX = panOrigX + dx;
+  mapPanY = panOrigY + dy;
+  appliquerTransformCarte();
+});
+mapWrap.addEventListener('pointerup', () => { panActive = false; mapSvgEl.classList.remove('dragging'); });
+mapWrap.addEventListener('pointerleave', () => { panActive = false; mapSvgEl.classList.remove('dragging'); });
+
+// --- Mode dessin : cliquer les lieux dans l'ordre pour tracer l'itinéraire ---
+document.getElementById('btn-mode-dessin').addEventListener('click', () => {
+  modeDessin = true;
+  sequenceDessin = [];
+  document.getElementById('btn-mode-dessin').style.display = 'none';
+  document.getElementById('dessin-controls').style.display = 'flex';
+  afficherToast('Mode dessin activé — clique tes lieux dans l\'ordre du parcours.');
+  renderMap();
+});
+function quitterModeDessin(){
+  modeDessin = false;
+  sequenceDessin = [];
+  document.getElementById('btn-mode-dessin').style.display = 'block';
+  document.getElementById('dessin-controls').style.display = 'none';
+  renderMap();
+}
+document.getElementById('btn-dessin-quitter').addEventListener('click', quitterModeDessin);
+document.getElementById('btn-dessin-annuler').addEventListener('click', () => {
+  sequenceDessin = [];
+  renderMap();
+});
+document.getElementById('btn-dessin-valider').addEventListener('click', () => {
+  if(sequenceDessin.length < 2){
+    afficherToast('Clique au moins deux lieux pour tracer un trajet.');
+    return;
+  }
+  const idsTraces = new Set(sequenceDessin);
+  const dansLOrdre = sequenceDessin.map(id => data.etapes.find(e => e.id === id)).filter(Boolean);
+  const resteEtapes = data.etapes.filter(e => !idsTraces.has(e.id));
+  data.etapes = [...dansLOrdre, ...resteEtapes];
+  logJournal(`Itinéraire dessiné à la main sur la carte (${dansLOrdre.length} étapes réordonnées).`);
+  save();
+  afficherToast('Tracé appliqué à l\'ordre de l\'itinéraire.');
+  quitterModeDessin();
+});
+
+verifierLienPartage();
+renderAll();
+</script>
+
+</body>
+</html>
