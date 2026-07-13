@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mon voyage au Sri Lanka</title>
+<style>
+  :root{
+    --brouillon:#9CA3AF;
+    --validation:#F59E0B;
+    --valide:#16A34A;
+    --supprimee:#DC2626;
+    --bg:#F7F5F2;
+    --panel:#FFFFFF;
+    --ink:#1F2937;
+    --muted:#6B7280;
+    --border:#E5E7EB;
+    --accent:#0F766E;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  header{
+    padding:16px 24px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  header h1{font-size:18px;margin:0;}
+  header .dates{font-size:13px;color:var(--muted);}
+  .layout{
+    display:grid;
+    grid-template-columns: 380px 1fr;
+    align-items:start;
+  }
+  @media (max-width: 900px){
+    .layout{grid-template-columns: 1fr;}
+  }
+  .sidebar{
+    padding:16px;
+    border-right:1px solid var(--border);
+    background:var(--panel);
+  }
+  .map-col{
+    padding:16px;
+    position:sticky;
+    top:0;
+  }
+  .card{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:14px;
+  }
+  .card h2{font-size:14px;margin:0 0 8px 0;}
+  .insight{
+    background:#FFF7ED;
+    border:1px solid #FDBA74;
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13px;
+    margin-bottom:14px;
+    line-height:1.5;
+  }
+  .insight b{color:#9A3412;}
+  label{display:block;font-size:12px;color:var(--muted);margin-top:8px;margin-bottom:3px;}
+  input, select, textarea{
+    width:100%;
+    padding:7px 8px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:13px;
+    font-family:inherit;
+  }
+  textarea{resize:vertical;min-height:44px;}
+  button{
+    cursor:pointer;
+    border:none;
+    border-radius:6px;
+    font-size:13px;
+    padding:8px 12px;
+    font-family:inherit;
+  }
+  .btn-primary{background:var(--accent);color:white;width:100%;margin-top:12px;}
+  .btn-secondary{background:white;border:1px solid var(--border);color:var(--ink);}
+  .btn-link{background:none;color:var(--accent);padding:2px 4px;font-size:12px;text-decoration:underline;}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .filters button{background:white;border:1px solid var(--border);font-size:12px;padding:5px 10px;}
+  .filters button.active{background:var(--ink);color:white;border-color:var(--ink);}
+  .etape{
+    background:white;
+    border:1px solid var(--border);
+    border-left:4px solid var(--brouillon);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:10px;
+  }
+  .etape.statut-brouillon{border-left-color:var(--brouillon);}
+  .etape.statut-validation{border-left-color:var(--validation);}
+  .etape.statut-valide{border-left-color:var(--valide);}
+  .etape.statut-supprimee{border-left-color:var(--supprimee); opacity:0.55;}
+  .etape-top{display:flex;justify-content:space-between;align-items:start;gap:8px;}
+  .etape-top strong{font-size:14px;}
+  .etape-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+  .badge{
+    font-size:10px;
+    padding:2px 7px;
+    border-radius:999px;
+    color:white;
+    white-space:nowrap;
+  }
+  .badge-brouillon{background:var(--brouillon);}
+  .badge-validation{background:var(--validation);}
+  .badge-valide{background:var(--valide);}
+  .badge-supprimee{background:var(--supprimee);}
+  .etape-actions{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;}
+  .etape-actions select{width:auto;font-size:12px;padding:4px 6px;}
+  .meteo-tag{
+    display:inline-block;
+    font-size:11px;
+    background:#EFF6FF;
+    color:#1D4ED8;
+    border-radius:6px;
+    padding:2px 6px;
+    margin-top:6px;
+  }
+  .no-position{
+    display:inline-block;
+    font-size:11px;
+    background:#FEF2F2;
+    color:#B91C1C;
+    border-radius:6px;
+    padding:2px 6px;
+    margin-top:6px;
+  }
+  .journal{max-height:220px;overflow-y:auto;font-size:12px;}
+  .journal-entry{padding:5px 0;border-bottom:1px dashed var(--border);color:var(--muted);}
+  .journal-entry:last-child{border-bottom:none;}
+  .empty{font-size:12px;color:var(--muted);font-style:italic;}
+  .history-list{font-size:12px;margin-top:6px;padding-left:14px;}
+  dialog{
+    border:none;
+    border-radius:10px;
+    padding:0;
+    max-width:420px;
+    width:90%;
+  }
+  dialog::backdrop{background:rgba(0,0,0,0.4);}
+  .dialog-body{padding:16px;}
+  .dialog-body h3{margin-top:0;font-size:15px;}
+
+  .map-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .map-caption{font-size:11px;color:var(--muted);margin-top:8px;}
+  .map-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:8px;}
+  .map-legend span{display:inline-flex;align-items:center;gap:4px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  #svg-map{width:100%;height:auto;background:#EAF4F0;border-radius:8px;}
+  .pin-label{font-size:9px;fill:#374151;}
+  .zone-label{font-size:9px;fill:#9CA3AF;font-style:italic;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🇱🇰 Mon voyage au Sri Lanka</h1>
+  <div class="dates">16 août → 6 septembre 2026 · 22 jours</div>
+</header>
+
+<div class="layout">
+  <div class="sidebar">
+
+    <div class="insight">
+      <b>À savoir pour tes dates :</b> mi-août à début septembre, la mousson du sud-ouest touche encore
+      la côte Ouest/Sud et les collines (Colombo, Galle, Ella, Nuwara Eliya) — pluies possibles,
+      surtout l'après-midi. La côte <b>Est</b> (Trincomalee, Arugam Bay, Pasikuda) et le <b>Nord</b> (Jaffna)
+      sont eux en pleine saison sèche. Ce n'est pas une prévision (trop loin dans le temps), juste la
+      climatologie moyenne — utile pour arbitrer entre régions en attendant une vraie météo.
+    </div>
+
+    <div class="card">
+      <h2>Ajouter un lieu (depuis ton album Insta)</h2>
+      <form id="form-etape">
+        <label>Nom du lieu *</label>
+        <input type="text" id="f-nom" required placeholder="ex: Ella Rock" />
+
+        <label>Ville / région *</label>
+        <input type="text" id="f-ville" required placeholder="ex: Ella" list="villes-connues" />
+        <datalist id="villes-connues"></datalist>
+
+        <label>Catégorie</label>
+        <select id="f-categorie">
+          <option value="activite">Activité / visite</option>
+          <option value="hebergement">Hébergement</option>
+          <option value="resto">Restaurant</option>
+          <option value="deplacement">Déplacement</option>
+        </select>
+
+        <label>Lien Instagram (optionnel)</label>
+        <input type="url" id="f-lien" placeholder="https://instagram.com/p/..." />
+
+        <label>Notes</label>
+        <textarea id="f-notes" placeholder="pourquoi cet endroit t'a plu, infos pratiques..."></textarea>
+
+        <div id="f-status" class="empty" style="margin-top:6px;"></div>
+        <button type="submit" class="btn-primary">Ajouter à l'itinéraire</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Étapes de l'itinéraire</h2>
+      <div class="filters" id="filters">
+        <button data-f="all" class="active">Toutes</button>
+        <button data-f="brouillon">Brouillon</button>
+        <button data-f="validation">En validation</button>
+        <button data-f="valide">Validé</button>
+        <button data-f="supprimee">Supprimées</button>
+      </div>
+      <div id="liste-etapes"></div>
+    </div>
+
+    <div class="card">
+      <h2>Journal d'activité <button class="btn-link" id="toggle-journal">afficher/masquer</button></h2>
+      <div class="journal" id="journal" style="display:none;"></div>
+    </div>
+
+  </div>
+
+  <div class="map-col">
+    <div class="map-card">
+      <svg id="svg-map" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="map-legend">
+        <span><i class="dot" style="background:#9CA3AF"></i> Brouillon</span>
+        <span><i class="dot" style="background:#F59E0B"></i> En validation</span>
+        <span><i class="dot" style="background:#16A34A"></i> Validé</span>
+      </div>
+      <div class="map-caption">Carte schématique (positions approximatives, pas à l'échelle GPS exacte) — sert à visualiser la répartition géographique de l'itinéraire, pas à naviguer.</div>
+    </div>
+  </div>
+</div>
+
+<dialog id="dialog-historique">
+  <div class="dialog-body">
+    <h3 id="hist-titre">Historique</h3>
+    <div id="hist-content"></div>
+    <button class="btn-secondary" onclick="document.getElementById('dialog-historique').close()" style="margin-top:12px;">Fermer</button>
+  </div>
+</dialog>
+
+<script>
+const STORAGE_KEY = "sriLankaTripPlanner_v1";
+const STATUTS = {
+  brouillon: {label: "Brouillon", next: "validation"},
+  validation: {label: "En validation", next: "valide"},
+  valide: {label: "Validé", next: null},
+  supprimee: {label: "Supprimée", next: null},
+};
+const CATEGORIES = {
+  activite: "Activité / visite",
+  hebergement: "Hébergement",
+  resto: "Restaurant",
+  deplacement: "Déplacement",
+};
+
+// Coordonnées approximatives des destinations courantes (pas d'appel réseau externe)
+const LIEUX_CONNUS = {
+  "colombo": [6.9271, 79.8612],
+  "negombo": [7.2083, 79.8358],
+  "kalpitiya": [8.2333, 79.7667],
+  "galle": [6.0535, 80.2210],
+  "unawatuna": [6.0108, 80.2494],
+  "mirissa": [5.9483, 80.4589],
+  "weligama": [5.9739, 80.4297],
+  "hikkaduwa": [6.1408, 80.1017],
+  "bentota": [6.4260, 79.9955],
+  "tangalle": [6.0242, 80.7936],
+  "kandy": [7.2906, 80.6337],
+  "nuwara eliya": [6.9497, 80.7891],
+  "ella": [6.8667, 81.0466],
+  "haputale": [6.7674, 80.9564],
+  "adam's peak": [6.8096, 80.4994],
+  "horton plains": [6.8021, 80.7969],
+  "sigiriya": [7.9570, 80.7603],
+  "dambulla": [7.8675, 80.6517],
+  "anuradhapura": [8.3114, 80.4037],
+  "polonnaruwa": [7.9403, 81.0188],
+  "habarana": [8.0362, 80.7526],
+  "trincomalee": [8.5874, 81.2152],
+  "arugam bay": [6.8400, 81.8360],
+  "pasikuda": [7.9270, 81.5619],
+  "batticaloa": [7.7167, 81.7000],
+  "jaffna": [9.6615, 80.0255],
+  "mannar": [8.9810, 79.9044],
+  "yala": [6.3725, 81.5185],
+  "udawalawe": [6.4390, 80.8983],
+};
+
+// Zones pour le tag météo (climatologie mi-août -> début sept)
+const REGIONS = [
+  {test: /colombo|galle|mirissa|unawatuna|bentota|hikkaduwa|weligama|matara|kalutara|negombo|tangalle/i, tag: "Côte Ouest/Sud — mousson possible"},
+  {test: /trincomalee|arugam|pasikuda|batticaloa|kalkudah/i, tag: "Côte Est — saison sèche"},
+  {test: /jaffna|mannar|point pedro/i, tag: "Nord — saison sèche"},
+  {test: /ella|nuwara eliya|kandy|haputale|hill country|adam's peak|horton/i, tag: "Collines — frais, pluie possible l'aprem"},
+  {test: /sigiriya|dambulla|anuradhapura|polonnaruwa|triangle culturel|habarana/i, tag: "Triangle culturel — chaud, sec en majorité"},
+];
+
+let data = load();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {etapes: [], journal: []};
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+function logJournal(msg){
+  data.journal.unshift({date: new Date().toISOString(), msg});
+  save();
+}
+
+function meteoTagFor(ville){
+  const r = REGIONS.find(r => r.test.test(ville));
+  return r ? r.tag : null;
+}
+
+function trouverCoords(ville){
+  const key = ville.trim().toLowerCase();
+  if(LIEUX_CONNUS[key]) return LIEUX_CONNUS[key];
+  const match = Object.keys(LIEUX_CONNUS).find(k => key.includes(k) || k.includes(key));
+  return match ? LIEUX_CONNUS[match] : null;
+}
+
+// remplir le datalist de suggestions
+const datalist = document.getElementById('villes-connues');
+Object.keys(LIEUX_CONNUS).forEach(v => {
+  const opt = document.createElement('option');
+  opt.value = v.replace(/\b\w/g, c => c.toUpperCase());
+  datalist.appendChild(opt);
+});
+
+// --- Carte SVG (projection simple lat/lon -> x/y sur le Sri Lanka) ---
+const BOUNDS = {latMin: 5.85, latMax: 9.9, lonMin: 79.6, lonMax: 82.0};
+function project(lat, lon){
+  const x = ((lon - BOUNDS.lonMin) / (BOUNDS.lonMax - BOUNDS.lonMin)) * 260 + 20;
+  const y = ((BOUNDS.latMax - lat) / (BOUNDS.latMax - BOUNDS.latMin)) * 380 + 15;
+  return {x, y};
+}
+const colorFor = statut => ({
+  brouillon: "#9CA3AF",
+  validation: "#F59E0B",
+  valide: "#16A34A",
+  supprimee: "#DC2626",
+}[statut]);
+
+// silhouette approximative de l'île (schématique, pas géographiquement précise)
+const ISLAND_PATH = "M 140 20 C 170 22 195 45 205 80 C 225 130 245 190 250 250 C 253 300 235 340 210 375 C 195 398 170 410 150 405 C 130 398 115 375 108 345 C 95 300 75 260 65 210 C 55 160 60 110 85 65 C 100 38 118 20 140 20 Z";
+
+function renderMap(){
+  const svg = document.getElementById('svg-map');
+  const filtre = document.querySelector('#filters button.active').dataset.f;
+  let html = `<path d="${ISLAND_PATH}" fill="#D8ECE3" stroke="#B7DCCB" stroke-width="2"/>`;
+
+  const visibles = data.etapes.filter(e => {
+    if(e.lat == null) return false;
+    if(filtre !== 'all') return e.statut === filtre;
+    return e.statut !== 'supprimee';
+  });
+
+  visibles.forEach(e => {
+    const {x, y} = project(e.lat, e.lon);
+    const c = colorFor(e.statut);
+    html += `<circle cx="${x}" cy="${y}" r="5" fill="${c}" stroke="white" stroke-width="1.5"><title>${escapeHtml(e.nom)} — ${STATUTS[e.statut].label}</title></circle>`;
+    html += `<text x="${x+7}" y="${y+3}" class="pin-label">${escapeHtml(e.nom)}</text>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// --- Formulaire d'ajout ---
+document.getElementById('form-etape').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const nom = document.getElementById('f-nom').value.trim();
+  const ville = document.getElementById('f-ville').value.trim();
+  const categorie = document.getElementById('f-categorie').value;
+  const lien = document.getElementById('f-lien').value.trim();
+  const notes = document.getElementById('f-notes').value.trim();
+  const statusEl = document.getElementById('f-status');
+
+  const coords = trouverCoords(ville);
+
+  const etape = {
+    id: crypto.randomUUID(),
+    nom, ville, categorie, lien, notes,
+    statut: "brouillon",
+    lat: coords ? coords[0] : null,
+    lon: coords ? coords[1] : null,
+    dateAjout: new Date().toISOString(),
+    historique: [{date: new Date().toISOString(), statut: "brouillon", note: "Création"}],
+  };
+  data.etapes.push(etape);
+  logJournal(`Ajout de "${nom}" (${CATEGORIES[categorie]}) en brouillon.`);
+  save();
+
+  statusEl.textContent = coords ? "" : "⚠️ Ville non reconnue dans notre liste — le lieu est ajouté mais n'apparaîtra pas sur la carte.";
+  ev.target.reset();
+  document.getElementById('f-categorie').value = categorie;
+  renderAll();
+});
+
+// --- Filtres ---
+document.getElementById('filters').addEventListener('click', (ev) => {
+  if(ev.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('#filters button').forEach(b => b.classList.remove('active'));
+  ev.target.classList.add('active');
+  renderAll();
+});
+
+// --- Liste des étapes ---
+function renderListe(){
+  const filtre = document.querySelector('#filters button.active').dataset.f;
+  const el = document.getElementById('liste-etapes');
+  const visibles = data.etapes.filter(e => filtre === 'all' ? true : e.statut === filtre);
+
+  if(visibles.length === 0){
+    el.innerHTML = `<div class="empty">Aucune étape pour ce filtre.</div>`;
+    return;
+  }
+
+  el.innerHTML = visibles.map(e => {
+    const tag = meteoTagFor(e.ville);
+    return `
+    <div class="etape statut-${e.statut}" data-id="${e.id}">
+      <div class="etape-top">
+        <div>
+          <strong>${escapeHtml(e.nom)}</strong>
+          <div class="etape-meta">${escapeHtml(e.ville)} · ${CATEGORIES[e.categorie]}</div>
+        </div>
+        <span class="badge badge-${e.statut}">${STATUTS[e.statut].label}</span>
+      </div>
+      ${e.notes ? `<div class="etape-meta">${escapeHtml(e.notes)}</div>` : ""}
+      ${tag ? `<span class="meteo-tag">🌦️ ${tag}</span>` : ""}
+      ${e.lat == null ? `<span class="no-position">📍 Pas sur la carte (ville non reconnue)</span>` : ""}
+      <div class="etape-actions">
+        <select class="select-statut">
+          ${Object.keys(STATUTS).map(s => `<option value="${s}" ${s===e.statut?'selected':''}>${STATUTS[s].label}</option>`).join('')}
+        </select>
+        <button class="btn-link btn-historique">Historique (${e.historique.length})</button>
+        ${e.lien ? `<a class="btn-link" href="${escapeHtml(e.lien)}" target="_blank" rel="noopener">Voir sur Insta</a>` : ""}
+      </div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.select-statut').forEach(sel => {
+    sel.addEventListener('change', (ev) => {
+      const id = ev.target.closest('.etape').dataset.id;
+      changerStatut(id, ev.target.value);
+    });
+  });
+  el.querySelectorAll('.btn-historique').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      const id = ev.target.closest('.etape').dataset.id;
+      afficherHistorique(id);
+    });
+  });
+}
+
+function changerStatut(id, nouveauStatut){
+  const e = data.etapes.find(e => e.id === id);
+  if(!e || e.statut === nouveauStatut) return;
+  const ancien = e.statut;
+  e.statut = nouveauStatut;
+  e.historique.push({date: new Date().toISOString(), statut: nouveauStatut, note: `Passage de "${STATUTS[ancien].label}" à "${STATUTS[nouveauStatut].label}"`});
+  logJournal(`"${e.nom}" : ${STATUTS[ancien].label} → ${STATUTS[nouveauStatut].label}.`);
+  save();
+  renderAll();
+}
+
+function afficherHistorique(id){
+  const e = data.etapes.find(e => e.id === id);
+  if(!e) return;
+  document.getElementById('hist-titre').textContent = `Historique — ${e.nom}`;
+  document.getElementById('hist-content').innerHTML = `<ul class="history-list">${
+    e.historique.slice().reverse().map(h => `<li>${new Date(h.date).toLocaleString('fr-FR')} — ${escapeHtml(h.note)}</li>`).join('')
+  }</ul>`;
+  document.getElementById('dialog-historique').showModal();
+}
+
+// --- Journal global ---
+function renderJournal(){
+  const el = document.getElementById('journal');
+  if(data.journal.length === 0){
+    el.innerHTML = `<div class="empty">Rien pour l'instant.</div>`;
+    return;
+  }
+  el.innerHTML = data.journal.map(j => `<div class="journal-entry">${new Date(j.date).toLocaleString('fr-FR')} — ${escapeHtml(j.msg)}</div>`).join('');
+}
+document.getElementById('toggle-journal').addEventListener('click', (ev) => {
+  ev.preventDefault();
+  const j = document.getElementById('journal');
+  j.style.display = j.style.display === 'none' ? 'block' : 'none';
+});
+
+function renderAll(){
+  renderListe();
+  renderMap();
+  renderJournal();
+}
+
+renderAll();
+</script>
+
+</body>
+</html>
