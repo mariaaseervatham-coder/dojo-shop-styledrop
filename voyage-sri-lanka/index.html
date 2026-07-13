@@ -137,7 +137,45 @@
     font-size:12px;
     font-weight:600;
     border-radius:8px;
+    opacity:0;
+    transition:opacity 0.1s ease;
   }
+  .etape-edit-bg{
+    position:absolute;
+    inset:0;
+    background:#2563EB;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    padding-left:18px;
+    font-size:12px;
+    font-weight:600;
+    border-radius:8px;
+    opacity:0;
+    transition:opacity 0.1s ease;
+  }
+  .leg-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:5px 4px 5px 16px;
+    margin-bottom:8px;
+    font-size:11px;
+    color:var(--muted);
+    cursor:pointer;
+    border-left:2px dashed var(--border);
+    margin-left:8px;
+  }
+  .leg-row:hover{color:var(--accent);}
+  .leg-row .leg-icon{font-size:12px;}
+  .apercu-card{display:flex;gap:8px;margin-top:6px;padding:8px;background:white;border:1px solid var(--border);border-radius:8px;}
+  .apercu-card img{width:52px;height:52px;object-fit:cover;border-radius:6px;flex-shrink:0;}
+  .apercu-texte{font-size:11px;color:var(--muted);}
+  .apercu-texte strong{display:block;font-size:12px;color:var(--ink);margin-bottom:2px;}
+  .apercu-texte p{margin:0 0 4px 0;}
+  .theme-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+  .theme-row input[type="text"]{margin:0;}
   .etape{
     background:white;
     border:1px solid var(--border);
@@ -310,7 +348,8 @@
       <button type="button" class="btn-secondary" id="btn-seed" style="width:100%;margin-bottom:10px;">📥 Charger l'itinéraire type du voyage de noces</button>
       <form id="form-etape">
         <label>Nom du lieu *</label>
-        <input type="text" id="f-nom" required placeholder="ex: Ella Rock" />
+        <input type="text" id="f-nom" required placeholder="ex: Ella Rock" autocomplete="off" />
+        <div id="f-apercu"></div>
 
         <label>Ville / région *</label>
         <div class="autocomplete-wrap">
@@ -321,13 +360,8 @@
         <label>Dates (optionnel)</label>
         <input type="text" id="f-dates" placeholder="ex: 18-19 août" />
 
-        <label>Catégorie</label>
-        <select id="f-categorie">
-          <option value="activite">Activité / visite</option>
-          <option value="hebergement">Hébergement</option>
-          <option value="resto">Restaurant</option>
-          <option value="deplacement">Déplacement</option>
-        </select>
+        <label>Thème</label>
+        <select id="f-categorie"></select>
 
         <label>Lien(s) — un par ligne (Insta, Pinterest, Google Maps, blog...)</label>
         <textarea id="f-liens" placeholder="https://instagram.com/p/...
@@ -343,7 +377,7 @@ https://maps.app.goo.gl/..."></textarea>
 
     <div class="card">
       <h2>Étapes de l'itinéraire</h2>
-      <button type="button" class="btn-secondary" id="btn-reordonner" style="width:100%;margin-bottom:12px;">🧭 Réordonner géographiquement</button>
+      <button type="button" class="btn-secondary" id="btn-reordonner" style="width:100%;margin-bottom:12px;">✨ Générer l'itinéraire (ordre géographique)</button>
 
       <div class="filters-label">Statut</div>
       <div class="filters" id="filters">
@@ -354,17 +388,11 @@ https://maps.app.goo.gl/..."></textarea>
         <button data-f="supprimee">Supprimées</button>
       </div>
 
-      <div class="filters-label">Thème</div>
-      <div class="filters" id="filters-categorie">
-        <button data-c="all" class="active">Tous</button>
-        <button data-c="hebergement">🏨 Hébergement</button>
-        <button data-c="activite">📸 Activité</button>
-        <button data-c="resto">🍴 Resto</button>
-        <button data-c="deplacement">🚗 Déplacement</button>
-      </div>
+      <div class="filters-label">Thème <button type="button" class="btn-link" id="btn-gerer-themes">⚙️ gérer</button></div>
+      <div class="filters" id="filters-categorie"></div>
 
       <div id="liste-etapes"></div>
-      <div class="empty" style="margin-top:6px;">Astuce mobile : glisse une étape vers la gauche pour la supprimer.</div>
+      <div class="empty" style="margin-top:6px;">Astuce mobile : glisse une étape vers la <strong>droite</strong> pour la modifier, vers la <strong>gauche</strong> pour la supprimer.</div>
     </div>
 
     <div class="card">
@@ -377,12 +405,7 @@ https://maps.app.goo.gl/..."></textarea>
   <div class="map-col">
     <div class="map-card">
       <svg id="svg-map" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg"></svg>
-      <div class="map-legend-row">
-        <span>🏨 Hébergement</span>
-        <span>📸 Activité</span>
-        <span>🍴 Resto</span>
-        <span>🚗 Déplacement</span>
-      </div>
+      <div class="map-legend-row" id="map-legend-themes"></div>
       <div class="map-legend-row">
         <span><i class="ring" style="border-color:#9CA3AF"></i> Brouillon</span>
         <span><i class="ring" style="border-color:#F59E0B"></i> En validation</span>
@@ -427,6 +450,65 @@ https://maps.app.goo.gl/..."></textarea>
 
 <div class="toast" id="toast"></div>
 
+<dialog id="dialog-themes">
+  <div class="dialog-body">
+    <h3>Gérer les thèmes</h3>
+    <div id="themes-liste"></div>
+    <div class="theme-row" style="margin-top:10px;">
+      <input type="text" id="theme-nouvel-emoji" placeholder="🎯" style="width:50px;text-align:center;flex:none;" maxlength="4" />
+      <input type="text" id="theme-nouveau-label" placeholder="Nom du thème" style="flex:1;" />
+      <button type="button" class="btn-primary" id="btn-ajouter-theme" style="width:auto;margin-top:0;white-space:nowrap;">Ajouter</button>
+    </div>
+    <button type="button" class="btn-secondary" onclick="document.getElementById('dialog-themes').close()" style="margin-top:12px;width:100%;">Fermer</button>
+  </div>
+</dialog>
+
+<dialog id="dialog-leg">
+  <div class="dialog-body">
+    <h3 id="leg-titre">Trajet</h3>
+    <label>Comment tu te déplaces entre ces deux étapes</label>
+    <textarea id="leg-transport" placeholder="ex: Route privée, ~4h / Train Yal Devi, ~6h30"></textarea>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button type="button" class="btn-primary" id="btn-leg-enregistrer" style="margin-top:0;">Enregistrer</button>
+      <button type="button" class="btn-secondary" id="btn-leg-annuler">Annuler</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dialog-edition">
+  <div class="dialog-body">
+    <h3>Modifier l'étape</h3>
+    <form id="form-edition">
+      <label>Nom du lieu *</label>
+      <input type="text" id="edit-nom" required autocomplete="off" />
+      <div id="edit-apercu"></div>
+
+      <label>Ville / région *</label>
+      <div class="autocomplete-wrap">
+        <input type="text" id="edit-ville" required autocomplete="off" />
+        <div class="suggestions" id="edit-ville-suggestions" style="display:none;"></div>
+      </div>
+
+      <label>Dates (optionnel)</label>
+      <input type="text" id="edit-dates" />
+
+      <label>Thème</label>
+      <select id="edit-categorie"></select>
+
+      <label>Lien(s) — un par ligne</label>
+      <textarea id="edit-liens"></textarea>
+
+      <label>Notes</label>
+      <textarea id="edit-notes"></textarea>
+
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button type="submit" class="btn-primary" style="margin-top:0;">Enregistrer</button>
+        <button type="button" class="btn-secondary" id="btn-edition-annuler">Annuler</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
 <dialog id="dialog-import-partage">
   <div class="dialog-body">
     <h3>Itinéraire partagé reçu</h3>
@@ -446,18 +528,14 @@ const STATUTS = {
   valide: {label: "Validé", next: null},
   supprimee: {label: "Supprimée", next: null},
 };
-const CATEGORIES = {
-  activite: "Activité / visite",
-  hebergement: "Hébergement",
-  resto: "Restaurant",
-  deplacement: "Déplacement",
-};
-const CATEGORIE_STYLE = {
-  activite: {color:"#8B5CF6", icon:"📸"},
-  hebergement: {color:"#0EA5E9", icon:"🏨"},
-  resto: {color:"#F97316", icon:"🍴"},
-  deplacement: {color:"#64748B", icon:"🚗"},
-};
+const CATEGORIES_DEFAUT = [
+  {id:"hebergement", emoji:"🏨", label:"Hébergement", color:"#0EA5E9"},
+  {id:"activite", emoji:"📸", label:"Activité", color:"#8B5CF6"},
+  {id:"resto", emoji:"🍴", label:"Resto", color:"#F97316"},
+];
+function getCategorie(id){
+  return data.categories.find(c => c.id === id) || {id, emoji:"❔", label:"Thème supprimé", color:"#9CA3AF"};
+}
 
 // Coordonnées approximatives des destinations courantes (pas d'appel réseau externe)
 const LIEUX_CONNUS = {
@@ -513,6 +591,7 @@ const REGIONS = [
 ];
 
 let data = load();
+migrerAnciensDeplacements();
 
 function load(){
   let d = {etapes: [], journal: []};
@@ -520,6 +599,8 @@ function load(){
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw) d = JSON.parse(raw);
   }catch(e){}
+  if(!d.legs) d.legs = {};
+  if(!d.categories || d.categories.length === 0) d.categories = CATEGORIES_DEFAUT.map(c => ({...c}));
   // migration: ancien champ "lien" (texte unique) -> "liens" (tableau)
   d.etapes.forEach(e => {
     if(!e.liens){
@@ -529,6 +610,28 @@ function load(){
     if(e.dates === undefined) e.dates = "";
   });
   return d;
+}
+
+// Les anciennes étapes de catégorie "déplacement" deviennent des notes de trajet
+// attachées entre l'étape qui précède et celle qui suit, au lieu d'être des étapes à part.
+function migrerAnciensDeplacements(){
+  const anciens = data.etapes.filter(e => e.categorie === 'deplacement');
+  if(anciens.length === 0) return;
+  const nouvelles = [];
+  data.etapes.forEach((e, i) => {
+    if(e.categorie === 'deplacement'){
+      const precedente = nouvelles[nouvelles.length - 1];
+      const suivante = data.etapes.slice(i + 1).find(x => x.categorie !== 'deplacement');
+      if(precedente && suivante){
+        const key = `${precedente.id}|${suivante.id}`;
+        if(!data.legs[key]) data.legs[key] = {transport: e.notes || e.nom};
+      }
+    } else {
+      nouvelles.push(e);
+    }
+  });
+  data.etapes = nouvelles;
+  logJournal(`Migration : ${anciens.length} étape(s) "Déplacement" converties en notes de trajet entre étapes.`);
 }
 function save(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -552,70 +655,118 @@ function trouverCoords(ville){
 
 // --- Autocomplétion du champ ville : liste locale instantanée + suggestions live OpenStreetMap ---
 const VILLES_LISTE = Object.keys(LIEUX_CONNUS).map(v => v.replace(/\b\w/g, c => c.toUpperCase()));
-const inputVille = document.getElementById('f-ville');
-const boxSuggestions = document.getElementById('f-ville-suggestions');
-let coordsSelection = null; // coordonnées exactes si l'utilisateur a cliqué une suggestion live
-let debounceLive = null;
 
 function itemsLocaux(q){
   return VILLES_LISTE.filter(v => v.toLowerCase().includes(q)).slice(0, 6).map(v => ({label: v, source: 'local'}));
 }
 
-function afficherSuggestions(valeur){
-  coordsSelection = null;
-  const q = valeur.trim().toLowerCase();
-  clearTimeout(debounceLive);
-  if(!q){ boxSuggestions.style.display = 'none'; return; }
-  peindreSuggestions(itemsLocaux(q));
-  if(q.length >= 3){
-    debounceLive = setTimeout(() => rechercherOSM(valeur.trim(), itemsLocaux(q)), 400);
+function creerAutocompleteVille(inputEl, boxEl, onCoordsChange){
+  let debounceLive = null;
+
+  function afficher(valeur){
+    onCoordsChange(null);
+    const q = valeur.trim().toLowerCase();
+    clearTimeout(debounceLive);
+    if(!q){ boxEl.style.display = 'none'; return; }
+    peindre(itemsLocaux(q));
+    if(q.length >= 3){
+      debounceLive = setTimeout(() => rechercher(valeur.trim(), itemsLocaux(q)), 400);
+    }
   }
+
+  async function rechercher(q, locaux){
+    try{
+      const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=lk&limit=5&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      if(!res.ok) return;
+      const json = await res.json();
+      const live = json.map(r => ({
+        label: r.display_name.split(',')[0].trim(),
+        source: 'live',
+        lat: parseFloat(r.lat),
+        lon: parseFloat(r.lon),
+      }));
+      const combinees = [...locaux];
+      live.forEach(l => {
+        if(!combinees.some(c => c.label.toLowerCase() === l.label.toLowerCase())) combinees.push(l);
+      });
+      peindre(combinees);
+    }catch(e){
+      // pas de connexion / service indisponible -> on garde les suggestions locales déjà affichées
+    }
+  }
+
+  function peindre(items){
+    if(items.length === 0){ boxEl.style.display = 'none'; return; }
+    boxEl._items = items;
+    boxEl.innerHTML = items.map((it, i) =>
+      `<div data-i="${i}">${it.source === 'live' ? '🌐 ' : ''}${escapeHtml(it.label)}</div>`
+    ).join('') + `<div style="padding:4px 10px;font-size:10px;color:var(--muted);">🌐 = résultat en direct via OpenStreetMap</div>`;
+    boxEl.style.display = 'block';
+  }
+
+  inputEl.addEventListener('input', () => afficher(inputEl.value));
+  inputEl.addEventListener('focus', () => afficher(inputEl.value));
+  boxEl.addEventListener('mousedown', (ev) => {
+    const target = ev.target.closest('[data-i]');
+    if(!target) return;
+    const item = boxEl._items[parseInt(target.dataset.i, 10)];
+    inputEl.value = item.label;
+    onCoordsChange(item.source === 'live' ? {lat: item.lat, lon: item.lon} : null);
+    boxEl.style.display = 'none';
+  });
+  document.addEventListener('click', (ev) => {
+    if(ev.target !== inputEl) boxEl.style.display = 'none';
+  });
 }
 
-async function rechercherOSM(q, locaux){
+let coordsSelection = null;
+let editionCoordsOverride = null;
+creerAutocompleteVille(document.getElementById('f-ville'), document.getElementById('f-ville-suggestions'), (c) => coordsSelection = c);
+creerAutocompleteVille(document.getElementById('edit-ville'), document.getElementById('edit-ville-suggestions'), (c) => editionCoordsOverride = c);
+
+// --- Aperçu (photo + extrait + lien) via Wikipedia, au nom du lieu saisi ---
+function creerApercu(inputNomEl, apercuEl, liensEl){
+  let debounce = null;
+  inputNomEl.addEventListener('input', () => {
+    clearTimeout(debounce);
+    apercuEl.innerHTML = '';
+    const q = inputNomEl.value.trim();
+    if(q.length < 4) return;
+    debounce = setTimeout(() => chercherApercu(q, apercuEl, liensEl), 600);
+  });
+}
+
+async function chercherApercu(nom, apercuEl, liensEl){
   try{
-    const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=lk&limit=5&q=${encodeURIComponent(q)}`;
+    const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(nom + ' Sri Lanka')}&gsrlimit=1&prop=pageimages|extracts|info&inprop=url&pithumbsize=160&exintro=1&explaintext=1&exsentences=2&format=json&origin=*`;
     const res = await fetch(url);
     if(!res.ok) return;
     const json = await res.json();
-    const live = json.map(r => ({
-      label: r.display_name.split(',')[0].trim(),
-      source: 'live',
-      lat: parseFloat(r.lat),
-      lon: parseFloat(r.lon),
-    }));
-    const combinees = [...locaux];
-    live.forEach(l => {
-      if(!combinees.some(c => c.label.toLowerCase() === l.label.toLowerCase())) combinees.push(l);
+    const pages = json && json.query && json.query.pages;
+    if(!pages) return;
+    const page = Object.values(pages)[0];
+    if(!page || !page.extract) return;
+    apercuEl.innerHTML = `
+      <div class="apercu-card">
+        ${page.thumbnail ? `<img src="${page.thumbnail.source}" alt="" />` : ''}
+        <div class="apercu-texte">
+          <strong>${escapeHtml(page.title)}</strong>
+          <p>${escapeHtml(page.extract)}</p>
+          <button type="button" class="btn-link apercu-ajouter-lien">+ ajouter le lien Wikipedia</button>
+        </div>
+      </div>`;
+    apercuEl.querySelector('.apercu-ajouter-lien').addEventListener('click', () => {
+      const existant = liensEl.value.trim();
+      liensEl.value = existant ? existant + '\n' + page.fullurl : page.fullurl;
+      afficherToast('Lien Wikipedia ajouté.');
     });
-    peindreSuggestions(combinees);
   }catch(e){
-    // pas de connexion / service indisponible -> on garde les suggestions locales déjà affichées
+    // pas de connexion / pas de résultat trouvé -> on n'affiche rien, silencieusement
   }
 }
-
-function peindreSuggestions(items){
-  if(items.length === 0){ boxSuggestions.style.display = 'none'; return; }
-  boxSuggestions._items = items;
-  boxSuggestions.innerHTML = items.map((it, i) =>
-    `<div data-i="${i}">${it.source === 'live' ? '🌐 ' : ''}${escapeHtml(it.label)}</div>`
-  ).join('') + `<div style="padding:4px 10px;font-size:10px;color:var(--muted);">🌐 = résultat en direct via OpenStreetMap</div>`;
-  boxSuggestions.style.display = 'block';
-}
-
-inputVille.addEventListener('input', () => afficherSuggestions(inputVille.value));
-inputVille.addEventListener('focus', () => afficherSuggestions(inputVille.value));
-boxSuggestions.addEventListener('mousedown', (ev) => {
-  const target = ev.target.closest('[data-i]');
-  if(!target) return;
-  const item = boxSuggestions._items[parseInt(target.dataset.i, 10)];
-  inputVille.value = item.label;
-  coordsSelection = item.source === 'live' ? {lat: item.lat, lon: item.lon} : null;
-  boxSuggestions.style.display = 'none';
-});
-document.addEventListener('click', (ev) => {
-  if(ev.target !== inputVille) boxSuggestions.style.display = 'none';
-});
+creerApercu(document.getElementById('f-nom'), document.getElementById('f-apercu'), document.getElementById('f-liens'));
+creerApercu(document.getElementById('edit-nom'), document.getElementById('edit-apercu'), document.getElementById('edit-liens'));
 
 // --- Carte SVG (projection simple lat/lon -> x/y sur le Sri Lanka) ---
 const BOUNDS = {latMin: 5.85, latMax: 9.9, lonMin: 79.6, lonMax: 82.0};
@@ -643,18 +794,17 @@ function renderMap(){
   const visibles = data.etapes.filter(e => {
     if(e.lat == null) return false;
     if(filtreCategorie !== 'all' && e.categorie !== filtreCategorie) return false;
-    if(filtreStatut !== 'all') return e.statut === filtreStatut;
-    return e.statut !== 'supprimee';
+    if(filtreStatut === 'supprimee') return e.statut === 'supprimee';
+    if(e.statut === 'supprimee') return false;
+    return filtreStatut === 'all' ? true : e.statut === filtreStatut;
   });
 
   // Regroupe par position ET par thème (un hébergement et un déplacement dans la même ville
   // restent deux pins distincts au lieu de fondre en un pin générique gris)
-  const OFFSETS = {
-    hebergement: {dx:-9, dy:-7},
-    activite: {dx:9, dy:-7},
-    resto: {dx:-9, dy:7},
-    deplacement: {dx:9, dy:7},
-  };
+  const POSITIONS_OFFSET = [{dx:-9,dy:-7}, {dx:9,dy:-7}, {dx:-9,dy:7}, {dx:9,dy:7}];
+  const indexTheme = {};
+  data.categories.forEach((c, i) => indexTheme[c.id] = POSITIONS_OFFSET[i % POSITIONS_OFFSET.length]);
+
   const groupes = {};
   visibles.forEach(e => {
     const {x, y} = project(e.lat, e.lon);
@@ -666,14 +816,14 @@ function renderMap(){
 
   const labelPose = new Set();
   Object.values(groupes).forEach(g => {
-    const off = OFFSETS[g.categorie] || {dx:0, dy:0};
+    const off = indexTheme[g.categorie] || {dx:0, dy:0};
     const gx = g.x + off.dx, gy = g.y + off.dy;
     const statuts = g.etapes.map(e => e.statut);
     const bordure = statuts.every(s => s === statuts[0]) ? colorFor(statuts[0]) : "#111827";
-    const style = CATEGORIE_STYLE[g.categorie];
-    const titre = g.etapes.map(e => `${e.nom} (${CATEGORIES[e.categorie]} · ${STATUTS[e.statut].label})`).join(' · ');
+    const style = getCategorie(g.categorie);
+    const titre = g.etapes.map(e => `${e.nom} (${getCategorie(e.categorie).label} · ${STATUTS[e.statut].label})`).join(' · ');
     html += `<circle cx="${gx}" cy="${gy}" r="7" fill="${style.color}" stroke="${bordure}" stroke-width="2.5"><title>${escapeHtml(titre)}</title></circle>`;
-    html += `<text x="${gx}" y="${gy}" class="pin-icon">${style.icon}</text>`;
+    html += `<text x="${gx}" y="${gy}" class="pin-icon">${style.emoji}</text>`;
 
     if(!labelPose.has(g.base)){
       labelPose.add(g.base);
@@ -687,6 +837,9 @@ function renderMap(){
   });
 
   svg.innerHTML = html;
+  document.getElementById('map-legend-themes').innerHTML = data.categories.map(c =>
+    `<span>${escapeHtml(c.emoji)} ${escapeHtml(c.label)}</span>`
+  ).join('');
 }
 
 function escapeHtml(s){
@@ -723,6 +876,88 @@ function afficherToast(message){
   toastTimer = setTimeout(() => t.classList.remove('visible'), 3000);
 }
 
+// --- Thèmes personnalisables ---
+function peuplerFiltresThemes(){
+  const cont = document.getElementById('filters-categorie');
+  const actif = cont.querySelector('button.active');
+  const current = actif ? actif.dataset.c : 'all';
+  cont.innerHTML = `<button data-c="all" class="${current === 'all' ? 'active' : ''}">Tous</button>` +
+    data.categories.map(c => `<button data-c="${c.id}" class="${current === c.id ? 'active' : ''}">${escapeHtml(c.emoji)} ${escapeHtml(c.label)}</button>`).join('');
+}
+function peuplerSelectCategorie(){
+  ['f-categorie', 'edit-categorie'].forEach(id => {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const current = sel.value;
+    sel.innerHTML = data.categories.map(c => `<option value="${c.id}">${escapeHtml(c.emoji)} ${escapeHtml(c.label)}</option>`).join('');
+    if(data.categories.some(c => c.id === current)) sel.value = current;
+  });
+}
+function renderThemesDialog(){
+  const el = document.getElementById('themes-liste');
+  el.innerHTML = data.categories.map((c, i) => `
+    <div class="theme-row" data-idx="${i}">
+      <input type="text" class="theme-emoji" value="${escapeHtml(c.emoji)}" style="width:50px;text-align:center;flex:none;" maxlength="4" />
+      <input type="text" class="theme-label" value="${escapeHtml(c.label)}" style="flex:1;" />
+      <button type="button" class="btn-link theme-supprimer" style="color:var(--supprimee);">Supprimer</button>
+    </div>`).join('');
+  el.querySelectorAll('.theme-emoji, .theme-label').forEach(input => {
+    input.addEventListener('change', (ev) => {
+      const idx = parseInt(ev.target.closest('[data-idx]').dataset.idx, 10);
+      const cat = data.categories[idx];
+      if(ev.target.classList.contains('theme-emoji')) cat.emoji = ev.target.value.trim() || '❔';
+      else cat.label = ev.target.value.trim() || cat.id;
+      save();
+      peuplerFiltresThemes();
+      peuplerSelectCategorie();
+      renderAll();
+    });
+  });
+  el.querySelectorAll('.theme-supprimer').forEach(btn => {
+    btn.addEventListener('click', async (ev) => {
+      const idx = parseInt(ev.target.closest('[data-idx]').dataset.idx, 10);
+      const cat = data.categories[idx];
+      const enUsage = data.etapes.filter(e => e.categorie === cat.id).length;
+      const ok = await confirmerAction(
+        'Supprimer ce thème ?',
+        enUsage > 0
+          ? `${enUsage} étape(s) utilisent "${cat.label}" et resteront affichées avec une icône "thème supprimé".`
+          : `Le thème "${cat.label}" sera supprimé.`
+      );
+      if(!ok) return;
+      data.categories.splice(idx, 1);
+      save();
+      renderThemesDialog();
+      peuplerFiltresThemes();
+      peuplerSelectCategorie();
+      renderAll();
+    });
+  });
+}
+document.getElementById('btn-gerer-themes').addEventListener('click', () => {
+  renderThemesDialog();
+  document.getElementById('dialog-themes').showModal();
+});
+document.getElementById('btn-ajouter-theme').addEventListener('click', () => {
+  const emojiEl = document.getElementById('theme-nouvel-emoji');
+  const labelEl = document.getElementById('theme-nouveau-label');
+  const label = labelEl.value.trim();
+  if(!label){ afficherToast('Donne un nom au thème.'); return; }
+  const emoji = emojiEl.value.trim() || '🏷️';
+  const palette = ['#0EA5E9', '#8B5CF6', '#F97316', '#059669', '#DB2777', '#CA8A04', '#64748B'];
+  const id = 'c_' + Date.now().toString(36);
+  data.categories.push({id, emoji, label, color: palette[data.categories.length % palette.length]});
+  emojiEl.value = '';
+  labelEl.value = '';
+  save();
+  renderThemesDialog();
+  peuplerFiltresThemes();
+  peuplerSelectCategorie();
+  renderAll();
+});
+peuplerFiltresThemes();
+peuplerSelectCategorie();
+
 // --- Formulaire d'ajout ---
 function creerEtape({nom, ville, categorie, dates, liens, notes, statut, coordsOverride}){
   const coords = coordsOverride ? [coordsOverride.lat, coordsOverride.lon] : trouverCoords(ville);
@@ -750,7 +985,7 @@ document.getElementById('form-etape').addEventListener('submit', (ev) => {
   const etape = creerEtape({nom, ville, categorie, dates, liens, notes, coordsOverride: coordsSelection});
   coordsSelection = null;
   data.etapes.push(etape);
-  logJournal(`Ajout de "${nom}" (${CATEGORIES[categorie]}) en brouillon.`);
+  logJournal(`Ajout de "${nom}" (${getCategorie(categorie).label}) en brouillon.`);
   save();
 
   statusEl.textContent = etape.lat != null ? "" : "⚠️ Ville non reconnue — le lieu est ajouté mais n'apparaîtra pas sur la carte. Choisis une suggestion dans la liste pour le localiser.";
@@ -780,6 +1015,8 @@ function renderListe(){
   const el = document.getElementById('liste-etapes');
   const visibles = data.etapes.filter(e => {
     if(filtreCategorie !== 'all' && e.categorie !== filtreCategorie) return false;
+    if(filtreStatut === 'supprimee') return e.statut === 'supprimee';
+    if(e.statut === 'supprimee') return false;
     return filtreStatut === 'all' ? true : e.statut === filtreStatut;
   });
 
@@ -788,17 +1025,21 @@ function renderListe(){
     return;
   }
 
-  el.innerHTML = visibles.map(e => {
+  const afficherTrajets = filtreStatut === 'all' && filtreCategorie === 'all';
+
+  el.innerHTML = visibles.map((e, i) => {
     const tag = meteoTagFor(e.ville);
     const liens = e.liens || [];
-    return `
+    const cat = getCategorie(e.categorie);
+    const etapeHtml = `
     <div class="etape-swipe" data-id="${e.id}">
+      <div class="etape-edit-bg">✏️ Modifier</div>
       <div class="etape-delete-bg">🗑️ Supprimer</div>
       <div class="etape statut-${e.statut}">
         <div class="etape-top">
           <div>
             <strong>${escapeHtml(e.nom)}</strong>
-            <div class="etape-meta">${escapeHtml(e.ville)} · ${CATEGORIES[e.categorie]}${e.dates ? ` · ${escapeHtml(e.dates)}` : ""}</div>
+            <div class="etape-meta">${escapeHtml(e.ville)} · ${cat.emoji} ${escapeHtml(cat.label)}${e.dates ? ` · ${escapeHtml(e.dates)}` : ""}</div>
           </div>
           <span class="badge badge-${e.statut}">${STATUTS[e.statut].label}</span>
         </div>
@@ -814,6 +1055,18 @@ function renderListe(){
         </div>
       </div>
     </div>`;
+
+    let legHtml = '';
+    if(afficherTrajets && i < visibles.length - 1){
+      const suivante = visibles[i + 1];
+      const leg = data.legs[`${e.id}|${suivante.id}`];
+      legHtml = `
+      <div class="leg-row" data-from="${e.id}" data-to="${suivante.id}">
+        <span class="leg-icon">↓</span>
+        <span>${leg ? escapeHtml(leg.transport) : "+ ajouter le moyen de transport"}</span>
+      </div>`;
+    }
+    return etapeHtml + legHtml;
   }).join('');
 
   el.querySelectorAll('.select-statut').forEach(sel => {
@@ -828,20 +1081,27 @@ function renderListe(){
       afficherHistorique(id);
     });
   });
-  el.querySelectorAll('.etape-swipe').forEach(wireSwipeToDelete);
+  el.querySelectorAll('.etape-swipe').forEach(wireSwipe);
+  el.querySelectorAll('.leg-row').forEach(row => {
+    row.addEventListener('click', () => ouvrirLeg(row.dataset.from, row.dataset.to));
+  });
 }
 
 // --- Glisser vers la gauche pour supprimer (mobile) ---
-function wireSwipeToDelete(wrap){
+function wireSwipe(wrap){
   const front = wrap.querySelector('.etape');
+  const editBg = wrap.querySelector('.etape-edit-bg');
+  const deleteBg = wrap.querySelector('.etape-delete-bg');
   const SEUIL = 70;
   let startX = null, dx = 0, active = false;
 
   const onDown = (x) => { startX = x; dx = 0; active = true; front.style.transition = 'none'; };
   const onMove = (x) => {
     if(!active) return;
-    dx = Math.min(0, Math.max(x - startX, -120));
+    dx = Math.max(-120, Math.min(120, x - startX));
     front.style.transform = `translateX(${dx}px)`;
+    editBg.style.opacity = dx > 10 ? '1' : '0';
+    deleteBg.style.opacity = dx < -10 ? '1' : '0';
   };
   const onUp = () => {
     if(!active) return;
@@ -851,8 +1111,14 @@ function wireSwipeToDelete(wrap){
       front.style.transform = 'translateX(-100%)';
       const id = wrap.dataset.id;
       setTimeout(() => supprimerEtape(id), 160);
+    } else if(dx > SEUIL){
+      front.style.transform = 'translateX(0)';
+      editBg.style.opacity = '0';
+      ouvrirEdition(wrap.dataset.id);
     } else {
       front.style.transform = 'translateX(0)';
+      editBg.style.opacity = '0';
+      deleteBg.style.opacity = '0';
     }
   };
 
@@ -872,6 +1138,67 @@ function wireSwipeToDelete(wrap){
 function supprimerEtape(id){
   changerStatut(id, 'supprimee');
 }
+
+// --- Édition complète d'une étape (ouverte par swipe droite ou programmatiquement) ---
+let editionId = null;
+function ouvrirEdition(id){
+  const e = data.etapes.find(x => x.id === id);
+  if(!e) return;
+  editionId = id;
+  editionCoordsOverride = null;
+  document.getElementById('edit-nom').value = e.nom;
+  document.getElementById('edit-apercu').innerHTML = '';
+  document.getElementById('edit-ville').value = e.ville;
+  document.getElementById('edit-dates').value = e.dates || '';
+  document.getElementById('edit-liens').value = (e.liens || []).join('\n');
+  document.getElementById('edit-notes').value = e.notes || '';
+  peuplerSelectCategorie();
+  document.getElementById('edit-categorie').value = e.categorie;
+  document.getElementById('dialog-edition').showModal();
+}
+document.getElementById('btn-edition-annuler').addEventListener('click', () => document.getElementById('dialog-edition').close());
+document.getElementById('form-edition').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const e = data.etapes.find(x => x.id === editionId);
+  if(!e) return;
+  e.nom = document.getElementById('edit-nom').value.trim();
+  e.ville = document.getElementById('edit-ville').value.trim();
+  e.dates = document.getElementById('edit-dates').value.trim();
+  e.categorie = document.getElementById('edit-categorie').value;
+  e.liens = document.getElementById('edit-liens').value.split('\n').map(s => s.trim()).filter(Boolean);
+  e.notes = document.getElementById('edit-notes').value.trim();
+  const coords = editionCoordsOverride ? [editionCoordsOverride.lat, editionCoordsOverride.lon] : trouverCoords(e.ville);
+  e.lat = coords ? coords[0] : null;
+  e.lon = coords ? coords[1] : null;
+  e.historique.push({date: new Date().toISOString(), statut: e.statut, note: 'Modifié'});
+  logJournal(`"${e.nom}" modifié.`);
+  save();
+  document.getElementById('dialog-edition').close();
+  renderAll();
+});
+
+// --- Trajet manuel entre deux étapes consécutives ---
+let legCourante = null;
+function ouvrirLeg(fromId, toId){
+  const fromE = data.etapes.find(x => x.id === fromId);
+  const toE = data.etapes.find(x => x.id === toId);
+  if(!fromE || !toE) return;
+  legCourante = {fromId, toId};
+  document.getElementById('leg-titre').textContent = `Trajet : ${fromE.nom} → ${toE.nom}`;
+  const leg = data.legs[`${fromId}|${toId}`];
+  document.getElementById('leg-transport').value = leg ? leg.transport : '';
+  document.getElementById('dialog-leg').showModal();
+}
+document.getElementById('btn-leg-annuler').addEventListener('click', () => document.getElementById('dialog-leg').close());
+document.getElementById('btn-leg-enregistrer').addEventListener('click', () => {
+  const key = `${legCourante.fromId}|${legCourante.toId}`;
+  const val = document.getElementById('leg-transport').value.trim();
+  if(val) data.legs[key] = {transport: val};
+  else delete data.legs[key];
+  save();
+  document.getElementById('dialog-leg').close();
+  renderAll();
+});
 
 function changerStatut(id, nouveauStatut){
   const e = data.etapes.find(e => e.id === id);
@@ -998,7 +1325,8 @@ document.getElementById('btn-seed').addEventListener('click', async () => {
   ITINERAIRE_MARIAGE.forEach(item => {
     data.etapes.push(creerEtape(item));
   });
-  logJournal(`Import de l'itinéraire type du voyage de noces (${ITINERAIRE_MARIAGE.length} étapes).`);
+  migrerAnciensDeplacements();
+  logJournal(`Import de l'itinéraire type du voyage de noces.`);
   save();
   renderAll();
 });
